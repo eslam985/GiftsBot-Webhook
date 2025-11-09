@@ -1,42 +1,20 @@
-const products = [
- {
-  id: 1,
-  name: "Classic Watch",
-  category: "accessories",
-  price: 500, // عدّلت السعر ليكون رقمًا أكبر وأكثر واقعية للمثال
-  description: "ساعة كلاسيك جلد طبيعي مقاومة للماء مع ضمان سنة."
- },
- {
-  id: 2,
-  name: "مصباح القمر ثلاثي الأبعاد",
-  category: "Home Decor", // هدايا ديكور منزلي
-  price: 250,
-  description: "مصباح يعمل باللمس بتصميم القمر ثلاثي الأبعاد، مثالي لغرف النوم."
- },
- {
-  id: 3,
-  name: "محفظة جلد رجالية",
-  category: "Men's Gifts", // هدايا رجالية
-  price: 180,
-  description: "محفظة جلد طبيعي، تصميم نحيف، تحتوي على حامل بطاقات."
- },
- {
-  id: 4,
-  name: "قلادة النجمة الماسية",
-  category: "Jewelry", // مجوهرات نسائية
-  price: 750,
-  description: "قلادة أنيقة من الفضة مع حجر ألماس صناعي لامع."
- }
-];
+// استيراد بيانات المنتجات من ملف data.json
+// يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
+const data = require('./data.json');
+const products = data.products; // استخراج مصفوفة المنتجات من الكائن
 
-
+/**
+ * دالة للحصول على سعر ووصف منتج معين بناءً على اسمه.
+ * @param {string} productName - اسم المنتج المراد البحث عنه.
+ * @returns {string} - رسالة تحتوي على السعر أو رسالة خطأ.
+ */
 const getPrice = (productName) => {
- // التحقق الجديد: تأكد أن productName موجود ومستقبل كـ String
+ // التحقق: التأكد أن productName موجود ومستقبل كـ String
  if (!productName || typeof productName !== 'string') {
   return `آسف، يرجى تحديد اسم المنتج بوضوح في سؤالك.`;
  }
 
- // 1. استخدم دالة find للبحث عن المنتج المطابق للاسم
+ // 1. استخدام دالة find للبحث عن المنتج المطابق للاسم
  const targetProduct = products.find(product => {
   // يجب أن نضمن أن البحث لا يهتم بحالة الأحرف
   return product.name.toLowerCase() === productName.toLowerCase();
@@ -52,42 +30,32 @@ const getPrice = (productName) => {
  }
 };
 
-// ... لا تقم بتعديل دالة getCategory أو module.exports
-
-
+/**
+ * دالة للحصول على قائمة بالمنتجات في فئة معينة.
+ * @param {string} categoryName - اسم الفئة المراد البحث عنها.
+ * @returns {string} - رسالة تحتوي على المنتجات أو رسالة خطأ.
+ */
 const getCategory = (categoryName) => {
- // 1. التصفية (Filter): إيجاد جميع المنتجات المطابقة للفئة
- // نستخدم toLowerCase لضمان مطابقة الفئة بغض النظر عن حالة الأحرف
- const filteredProducts = products.filter(product => {
-  return product.category.toLowerCase() === categoryName.toLowerCase();
- });
-
- // 2. التحقق من النتيجة: هل وجدنا أي شيء؟
- if (filteredProducts.length === 0) {
-  // إذا كانت المصفوفة فارغة، نعتذر
-  return `آسف، لا توجد حاليًا هدايا في فئة "${categoryName}" لدينا.`;
+ if (!categoryName) {
+  return "من فضلك حدد اسم الفئة التي تبحث عنها.";
  }
 
- // 3. التعيين (Map): استخراج الأسماء فقط من المنتجات المصفاة
- // نحول مصفوفة الكائنات إلى مصفوفة سلاسل نصية (أسماء المنتجات فقط)
- const productNames = filteredProducts.map(product => {
-  return product.name;
- });
+ // 1. تصفية المنتجات حسب الفئة
+ const filteredProducts = products.filter(product =>
+  product.category.toLowerCase().includes(categoryName.toLowerCase())
+ );
 
- // 4. الدمج (Join): تحويل مصفوفة الأسماء إلى سلسلة نصية قابلة للقراءة
- // نستخدم "\n" (سطر جديد) للفصل لجعل القائمة مرتبة
- const listString = productNames.join('\n - ');
-
- // 5. إرجاع القائمة النهائية
- return `تتوفر لدينا المنتجات التالية في فئة "${categoryName}":\n - ${listString}`;
+ // 2. التحقق من وجود منتجات في الفئة
+ if (filteredProducts.length > 0) {
+  const productNames = filteredProducts.map(p => `${p.name} (${p.price} جنيه)`).join('، ');
+  return `إليك بعض المنتجات في فئة "${categoryName}": ${productNames}.`;
+ } else {
+  return `آسف، لا توجد حاليًا هدايا في فئة "${categoryName}" لدينا.`;
+ }
 };
 
-
-// الآن، لجعل هذه الدوال متاحة لأي برنامج آخر (مثل خادم Node.js)
-// يجب أن "نُصدرها" (Export) ككائن واحد
+// تصدير الدوال لاستخدامها في server.js
 module.exports = {
- products,
  getPrice,
  getCategory,
- // يمكننا إضافة أي دالة أخرى نحتاجها هنا
 };

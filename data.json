@@ -1,0 +1,9 @@
+{
+  "products": [
+    { "name": "محفظة جلد رجالية", "price": 180, "category": "Men's Gifts", "description": "محفظة جلد طبيعي، تصميم نحيف، تحتوي على حامل بطاقات" },
+    { "name": "سلسلة فضة نسائية", "price": 350, "category": "Jewelry", "description": "سلسلة من الفضة عيار 925 بتصميم قلادة قلب" },
+    { "name": "ساعة ذكية رياضية", "price": 800, "category": "Electronics", "description": "ساعة مقاومة للماء مع مراقبة ضربات القلب وتتبع اللياقة" },
+    { "name": "طقم شاي فاخر", "price": 420, "category": "Home Goods", "description": "طقم شاي من البورسلين لستة أشخاص" },
+    { "name": "كوب حراري ذكي", "price": 250, "category": "Electronics", "description": "كوب يحافظ على درجة حرارة المشروب لفترة طويلة" }
+  ]
+}
