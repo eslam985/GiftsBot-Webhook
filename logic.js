@@ -68,21 +68,24 @@ const getCategory = (categoryName) => {
   return "من فضلك حدد اسم الفئة التي تبحث عنها.";
  }
 
- // ⬇️ التعديل الحاسم: ترجمة الاسم العربي إلى الإنجليزي ⬇️
- const cleanCategoryName = categoryName.toLowerCase().trim();
+ // ⬇️ التعديل النهائي والحاسم لإزالة الـ (التعريف) ⬇️
+ // 1. تنظيف القيمة من المسافات وتحويلها لحروف صغيرة
+ let cleanCategoryName = categoryName.toLowerCase().trim();
 
- // 1. محاولة ترجمة الاسم العربي إلى نظيره الإنجليزي في الخريطة
- // إذا وجد تطابق، searchCategory = 'Jewelry'. إذا لم يجد، searchCategory = 'مجوهرات'.
+ // 2. إزالة "الـ" من بداية الكلمة (لحل مشكلة المجوهرات)
+ // يتحقق مما إذا كانت تبدأ بـ "ال" ولديه حرف آخر بعدها
+ if (cleanCategoryName.startsWith('ال') && cleanCategoryName.length > 2) {
+  cleanCategoryName = cleanCategoryName.substring(2).trim();
+ }
+
+ // 3. محاولة ترجمة الاسم العربي إلى نظيره الإنجليزي في الخريطة
  let searchCategory = categoryMap[cleanCategoryName] || categoryName;
 
  // توحيد الاسم الذي سنبحث به (سواء كان 'Jewelry' أو 'Electronics')
  searchCategory = searchCategory.toLowerCase().trim();
 
-
- // 2. تصفية المنتجات حسب الفئة
+ // 4. تصفية المنتجات حسب الفئة
  const filteredProducts = products.filter(product =>
-  // البحث الآن سيتم باسم الفئة المُترجم (Jewelry)
-  // نستخدم === لضمان تطابق الاسم بالكامل
   product.category.toLowerCase().trim() === searchCategory
  );
 
