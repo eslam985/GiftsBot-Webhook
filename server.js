@@ -18,18 +18,23 @@ app.post('/', (req, res) => {
 
  // 2. مقارنة النية المستلمة بالنوايا التي أنشأتها
  if (intent === 'PriceQuery') {
-  // استخراج اسم المنتج الذي سميناه 'product_name' في Dialogflow
-  let productName = parameters.ProductName; // ⬅️ تم تغيير product_name إلى ProductName
 
-  // 🛑 التعديل الإلزامي: التحقق مما إذا كانت القيمة مصفوفة وأخذ العنصر الأول منها
-  if (Array.isArray(productName)) {
-   productName = productName[0];
+  // ⬇️ التعديل هنا: استخدام .ProductName لاستخراج المتغير ⬇️
+  let productName = parameters.ProductName;
+
+  // ⬇️ إضافة تحقق جديد (لتأمين استخلاص القيمة) ⬇️
+  const resolvedValue = req.body.queryResult.parameters.ProductName;
+
+  if (Array.isArray(resolvedValue)) {
+   productName = resolvedValue[0];
+  } else {
+   productName = resolvedValue;
   }
 
-
-
-  // استدعاء دالتك التي كتبتها في logic.js
+  // يجب أن تكون الدالة التي نستدعيها هي getPrice
   responseText = botLogic.getPrice(productName);
+
+
 
  } else if (intent === 'CategoryQuery') {
   // استخراج اسم الفئة الذي سميناه 'category_name' في Dialogflow
