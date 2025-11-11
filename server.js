@@ -17,8 +17,6 @@ app.post('/', (req, res) => {
  // ⬇️ معالجة نية الشراء (Order.Checkout) ⬇️
  if (intent === 'Order.Checkout') {
   const productName = parameters.ProductName; // المتغير الذي قمنا بتعليمه في Dialogflow
-  // ⬅️ تصحيح: يجب استخدام botLogic.handleCheckout
-  responseText = botLogic.handleCheckout(productName);
  }
 
  // 2. مقارنة النية المستلمة بالنوايا الأخرى
