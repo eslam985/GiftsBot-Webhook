@@ -4,25 +4,28 @@ const botLogic = require('./logic'); // استيراد دوالك من logic.js
 
 const app = express();
 app.use(bodyParser.json());
-app.use(express.static('public')); // إذا احتجت لملفات ثابتة مستقبلاً
+app.use(express.static('public'));
 
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
 app.post('/', (req, res) => {
- // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
+ // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow ⬅️ يجب أن تكون هذه الخطوات أولاً
  const intent = req.body.queryResult.intent.displayName;
  const parameters = req.body.queryResult.parameters;
 
  let responseText = '';
 
+ // ⬇️ معالجة نية الشراء (Order.Checkout) ⬇️
+ if (intent === 'Order.Checkout') {
+  const productName = parameters.ProductName; // المتغير الذي قمنا بتعليمه في Dialogflow
+  // ⬅️ تصحيح: يجب استخدام botLogic.handleCheckout
+  responseText = botLogic.handleCheckout(productName);
+ }
 
+ // 2. مقارنة النية المستلمة بالنوايا الأخرى
+ else if (intent === 'Product.PriceFinal') { // ⬅️ الآن يمكننا استخدام 'intent'
 
- // 2. مقارنة النية المستلمة بالنوايا التي أنشأتها
- if (intent === 'Product.PriceFinal') { // ⬅️ تغيير الاسم ليطابق ما في Dialogflow
-  
-  // ⬇️ التعديل هنا: استخدام .ProductName لاستخراج المتغير ⬇️
   let productName = parameters.ProductName;
 
-  // ⬇️ إضافة تحقق جديد (لتأمين استخلاص القيمة) ⬇️
   const resolvedValue = req.body.queryResult.parameters.ProductName;
 
   if (Array.isArray(resolvedValue)) {
@@ -31,16 +34,11 @@ app.post('/', (req, res) => {
    productName = resolvedValue;
   }
 
-  // يجب أن تكون الدالة التي نستدعيها هي getPrice
   responseText = botLogic.getPrice(productName);
 
-
-
  } else if (intent === 'CategoryQuery') {
-  // استخراج اسم الفئة الذي سميناه 'category_name' في Dialogflow
-  const categoryName = parameters.category_name;
 
-  // استدعاء دالتك التي كتبتها في logic.js
+  const categoryName = parameters.category_name;
   responseText = botLogic.getCategory(categoryName);
 
  } else {
@@ -54,6 +52,7 @@ app.post('/', (req, res) => {
  });
 });
 
+// ... (بقية الكود) ...
 // تشغيل الخادم على المنفذ 3000 (الذي يتصل به Ngrok)
 const PORT = 3000;
 app.listen(PORT, () => {
