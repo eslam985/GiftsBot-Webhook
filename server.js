@@ -17,8 +17,8 @@ app.post('/', (req, res) => {
 
 
  // 2. مقارنة النية المستلمة بالنوايا التي أنشأتها
- if (intent === 'PriceQuery') {
-
+ if (intent === 'Product.PriceFinal') { // ⬅️ تغيير الاسم ليطابق ما في Dialogflow
+  
   // ⬇️ التعديل هنا: استخدام .ProductName لاستخراج المتغير ⬇️
   let productName = parameters.ProductName;
 
