@@ -11,16 +11,10 @@ app.post('/', (req, res) => {
  // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow ⬅️ يجب أن تكون هذه الخطوات أولاً
  const intent = req.body.queryResult.intent.displayName;
  const parameters = req.body.queryResult.parameters;
-
  let responseText = '';
 
- // ⬇️ معالجة نية الشراء (Order.Checkout) ⬇️
- if (intent === 'Order.Checkout') {
-  const productName = parameters.ProductName; // المتغير الذي قمنا بتعليمه في Dialogflow
- }
-
  // 2. مقارنة النية المستلمة بالنوايا الأخرى
- else if (intent === 'Product.PriceFinal') { // ⬅️ الآن يمكننا استخدام 'intent'
+ if (intent === 'Product.PriceFinal') { // ⬅️ بدأنا بـ 'if' بدلاً من 'else if' لأنها الآن أول كتلة تحقق
 
   let productName = parameters.ProductName;
 
@@ -43,7 +37,6 @@ app.post('/', (req, res) => {
   // نية غير معروفة (Default Fallback)
   responseText = 'عفواً، لم أفهم سؤالك. يرجى سؤالي عن سعر منتج أو فئة معينة.';
  }
-
  // 3. إرسال الرد مرة أخرى إلى Dialogflow
  res.json({
   fulfillmentText: responseText
