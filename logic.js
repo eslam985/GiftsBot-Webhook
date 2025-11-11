@@ -47,8 +47,8 @@ const getPrice = (productName) => {
    }
   }
 
-
-  return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه. الوصف: ${targetProduct.description}`;
+  // ⬇️ التعديل الحاسم: إضافة رابط الشراء مباشرة إلى الرد ⬇️
+  return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه. الوصف: ${targetProduct.description}. يمكنك طلب هذا المنتج الآن مباشرة من هنا: https://yourstore.com/checkout`;
  } else {
   // ⬇️ 4. إذا لم نجده كاسم منتج، نحاول البحث كاسم فئة (كما كان سابقاً) ⬇️
 
