@@ -130,24 +130,10 @@ const getCategory = (categoryName) => {
  * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
  * @returns {string} - رسالة توجيهية مع رابط الشراء.
  */
-const handleCheckout = (productName) => {
- // 1. يمكننا البحث عن المنتج للتأكد من وجوده (اختياري)
- const targetProduct = products.find(product =>
-  product.name.toLowerCase().trim() === productName.toLowerCase().trim()
- );
 
- if (targetProduct) {
-  // إذا وجدنا المنتج، نعرض اسمه بوضوح في رسالة الشراء
-  return `لشراء منتج "${targetProduct.name}"، يرجى إتمام طلبك عبر الرابط التالي: https://yourstore.com/checkout`;
- } else {
-  // إذا لم يحدد المنتج، نرسل رابط المتجر العام
-  return `شكراً لاهتمامك. يرجى إتمام عملية الشراء لطلبك عبر الرابط التالي: https://yourstore.com/checkout`;
- }
-};
 
 // ... (تأكد من إضافة الدالة إلى module.exports) ...
 module.exports = {
  getPrice,
  getCategory,
- handleCheckout, // ⬅️ أضف هذه السطر
 };
