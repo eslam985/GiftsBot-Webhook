@@ -18,8 +18,8 @@ const getPrice = (productName) => {
 
  // 1. استخدام دالة find للبحث عن المنتج المطابق للاسم
  const targetProduct = products.find(product => {
-  // يجب أن نضمن أن البحث لا يهتم بحالة الأحرف
-  return product.name.toLowerCase() === productName.toLowerCase();
+  // ⬇️ التعديل هنا: استخدام .trim() لإزالة المسافات من الأطراف ⬇️
+  return product.name.toLowerCase().trim() === productName.toLowerCase().trim();
  });
 
  // 2. استخدم شرط If/Else للتحقق من نتيجة البحث
