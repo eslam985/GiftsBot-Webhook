@@ -49,11 +49,18 @@ const getPrice = (productName) => {
  }
 };
 
-
+// خريطة لترجمة الأسماء العربية الشائعة للفئات إلى الاسم الإنجليزي المستخدم في data.json
+const categoryMap = {
+ 'مجوهرات': 'Jewelry',
+ 'إلكترونيات': 'Electronics',
+ 'الكترونيات': 'Electronics',
+ "هدايا رجالية": "Men's Gifts",
+ // أضف المزيد من الفئات هنا إذا لزم الأمر
+};
 
 /**
  * دالة للحصول على قائمة بالمنتجات في فئة معينة.
- * @param {string} categoryName - اسم الفئة المراد البحث عنها.
+ * @param {string} categoryName - اسم الفئة المراد البحث عنها (قد يكون عربي أو إنجليزي).
  * @returns {string} - رسالة تحتوي على المنتجات أو رسالة خطأ.
  */
 const getCategory = (categoryName) => {
@@ -61,14 +68,28 @@ const getCategory = (categoryName) => {
   return "من فضلك حدد اسم الفئة التي تبحث عنها.";
  }
 
- // 1. تصفية المنتجات حسب الفئة
+ // ⬇️ التعديل الحاسم: ترجمة الاسم العربي إلى الإنجليزي ⬇️
+ const cleanCategoryName = categoryName.toLowerCase().trim();
+
+ // 1. محاولة ترجمة الاسم العربي إلى نظيره الإنجليزي في الخريطة
+ // إذا وجد تطابق، searchCategory = 'Jewelry'. إذا لم يجد، searchCategory = 'مجوهرات'.
+ let searchCategory = categoryMap[cleanCategoryName] || categoryName;
+
+ // توحيد الاسم الذي سنبحث به (سواء كان 'Jewelry' أو 'Electronics')
+ searchCategory = searchCategory.toLowerCase().trim();
+
+
+ // 2. تصفية المنتجات حسب الفئة
  const filteredProducts = products.filter(product =>
-  product.category.toLowerCase().includes(categoryName.toLowerCase())
+  // البحث الآن سيتم باسم الفئة المُترجم (Jewelry)
+  // نستخدم === لضمان تطابق الاسم بالكامل
+  product.category.toLowerCase().trim() === searchCategory
  );
 
- // 2. التحقق من وجود منتجات في الفئة
+ // 3. التحقق من وجود منتجات في الفئة
  if (filteredProducts.length > 0) {
   const productNames = filteredProducts.map(p => `${p.name} (${p.price} جنيه)`).join('، ');
+  // نستخدم اسم الفئة الأصلي الذي أدخله المستخدم في الرد (الأكثر منطقية للعميل)
   return `إليك بعض المنتجات في فئة "${categoryName}": ${productNames}.`;
  } else {
   return `آسف، لا توجد حاليًا هدايا في فئة "${categoryName}" لدينا.`;
