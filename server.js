@@ -14,15 +14,19 @@ app.post('/', (req, res) => {
 
  let responseText = '';
 
+
+
  // 2. مقارنة النية المستلمة بالنوايا التي أنشأتها
  if (intent === 'PriceQuery') {
   // استخراج اسم المنتج الذي سميناه 'product_name' في Dialogflow
-  let productName = parameters.product_name; // ⬅️ قمنا بتغيير const إلى let للسماح بالتعديل
+  let productName = parameters.ProductName; // ⬅️ تم تغيير product_name إلى ProductName
 
   // 🛑 التعديل الإلزامي: التحقق مما إذا كانت القيمة مصفوفة وأخذ العنصر الأول منها
   if (Array.isArray(productName)) {
    productName = productName[0];
   }
+
+
 
   // استدعاء دالتك التي كتبتها في logic.js
   responseText = botLogic.getPrice(productName);

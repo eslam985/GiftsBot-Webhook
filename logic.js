@@ -8,6 +8,8 @@ const products = data.products; // استخراج مصفوفة المنتجات 
  * @param {string} productName - اسم المنتج المراد البحث عنه.
  * @returns {string} - رسالة تحتوي على السعر أو رسالة خطأ.
  */
+
+
 const getPrice = (productName) => {
  // التحقق: التأكد أن productName موجود ومستقبل كـ String
  if (!productName || typeof productName !== 'string') {
@@ -25,10 +27,21 @@ const getPrice = (productName) => {
   // 3. إذا وجدنا المنتج، نرجع رسالة السعر
   return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه. الوصف: ${targetProduct.description}`;
  } else {
-  // 4. إذا لم نجده، نرجع رسالة خطأ
-  return `آسف، المنتج ${productName} غير موجود في قائمة الهدايا لدينا.`;
+  // ⬇️ 4. إذا لم نجده كاسم منتج، نحاول البحث كاسم فئة ⬇️
+
+  const categoryResult = getCategory(productName);
+
+  // إذا كان الرد من دالة getCategory لا يحتوي على رسالة خطأ، يعني أنه وجد منتجات
+  if (!categoryResult.includes('آسف') && !categoryResult.includes('من فضلك')) {
+   return categoryResult;
+  }
+
+  // 5. إذا لم نجد لا منتجاً ولا فئة، نرجع رسالة خطأ
+  return `آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`;
  }
 };
+
+
 
 /**
  * دالة للحصول على قائمة بالمنتجات في فئة معينة.
