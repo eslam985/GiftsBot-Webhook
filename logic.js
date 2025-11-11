@@ -9,22 +9,30 @@ const products = data.products; // استخراج مصفوفة المنتجات 
  * @returns {string} - رسالة تحتوي على السعر أو رسالة خطأ.
  */
 
-
 const getPrice = (productName) => {
- // التحقق: التأكد أن productName موجود ومستقبل كـ String
+ // التحقق الأولي:
  if (!productName || typeof productName !== 'string') {
   return `آسف، يرجى تحديد اسم المنتج بوضوح في سؤالك.`;
  }
 
- // 1. استخدام دالة find للبحث عن المنتج المطابق للاسم
+ // ⬇️ التعديل الجديد والحاسم: تنظيف الاسم من أحرف الجر والمسافات ⬇️
+ // 1. إزالة أي "بـ" (أو أحرف جر أخرى) من بداية الاسم
+ let cleanProductName = productName.trim();
+
+ // مثال: يحول "بسلسلة فضة نسائية" إلى "سلسلة فضة نسائية"
+ if (cleanProductName.startsWith('ب') && cleanProductName.length > 1) {
+  cleanProductName = cleanProductName.substring(1).trim();
+ }
+
+ // 2. استخدام الدالة find للبحث عن المنتج المطابق للاسم
  const targetProduct = products.find(product => {
-  // ⬇️ التعديل هنا: استخدام .trim() لإزالة المسافات من الأطراف ⬇️
-  return product.name.toLowerCase().trim() === productName.toLowerCase().trim();
+  // البحث الآن سيستخدم cleanProductName (الخالي من الباء)
+  return product.name.toLowerCase().trim() === cleanProductName.toLowerCase().trim();
  });
 
- // 2. استخدم شرط If/Else للتحقق من نتيجة البحث
+ // 3. استخدم شرط If/Else للتحقق من نتيجة البحث
  if (targetProduct) {
-  // 3. إذا وجدنا المنتج، نرجع رسالة السعر
+
   return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه. الوصف: ${targetProduct.description}`;
  } else {
   // ⬇️ 4. إذا لم نجده كاسم منتج، نحاول البحث كاسم فئة ⬇️
