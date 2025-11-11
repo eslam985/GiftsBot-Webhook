@@ -2,21 +2,21 @@
 // يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
 const data = require('./data.json');
 const products = data.products; // استخراج مصفوفة المنتجات من الكائن
+// ... (بقية الكود) ...
 
 /**
  * دالة للحصول على سعر ووصف منتج معين بناءً على اسمه.
+ * تم تحديثها لاستخدام البحث الجزئي (includes) بدلاً من التطابق التام (===).
  * @param {string} productName - اسم المنتج المراد البحث عنه.
  * @returns {string} - رسالة تحتوي على السعر أو رسالة خطأ.
  */
-
 const getPrice = (productName) => {
  // التحقق الأولي:
  if (!productName || typeof productName !== 'string') {
   return `آسف، يرجى تحديد اسم المنتج بوضوح في سؤالك.`;
  }
 
- // ⬇️ التعديل الجديد والحاسم: تنظيف الاسم من أحرف الجر والمسافات ⬇️
- // 1. إزالة أي "بـ" (أو أحرف جر أخرى) من بداية الاسم
+ // 1. تنظيف الاسم من أحرف الجر والمسافات
  let cleanProductName = productName.trim();
 
  // مثال: يحول "بسلسلة فضة نسائية" إلى "سلسلة فضة نسائية"
@@ -24,22 +24,36 @@ const getPrice = (productName) => {
   cleanProductName = cleanProductName.substring(1).trim();
  }
 
- // 2. استخدام الدالة find للبحث عن المنتج المطابق للاسم
- const targetProduct = products.find(product => {
+ // ⬇️ التغيير الحاسم: استخدام .filter والـ .includes ⬇️
+ // نبحث عن المنتجات التي يحتوي اسمها على جزء من اسم المنتج المُدخل
+ const potentialProducts = products.filter(product => {
   // البحث الآن سيستخدم cleanProductName (الخالي من الباء)
-  return product.name.toLowerCase().trim() === cleanProductName.toLowerCase().trim();
+  return product.name.toLowerCase().includes(cleanProductName.toLowerCase().trim());
  });
+ // ⬆️ نهاية التغيير الحاسم ⬆️
 
- // 3. استخدم شرط If/Else للتحقق من نتيجة البحث
- if (targetProduct) {
+
+ // 3. التحقق من نتيجة البحث واختيار أفضل تطابق
+ if (potentialProducts.length > 0) {
+  // نختار أفضل تطابق (الأطول هو الأفضل، أو نختار أول واحد)
+  let targetProduct = potentialProducts[0];
+
+  // إذا كان هناك أكثر من منتج، يمكننا استخدام منطق لاختيار الأقرب
+  if (potentialProducts.length > 1) {
+   // منطق لاختيار المنتج الذي يطابق الاسم المدخل بشكل كامل أولاً
+   const exactMatch = potentialProducts.find(p => p.name.toLowerCase().trim() === cleanProductName.toLowerCase().trim());
+   if (exactMatch) {
+    targetProduct = exactMatch;
+   }
+  }
+
 
   return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه. الوصف: ${targetProduct.description}`;
  } else {
-  // ⬇️ 4. إذا لم نجده كاسم منتج، نحاول البحث كاسم فئة ⬇️
+  // ⬇️ 4. إذا لم نجده كاسم منتج، نحاول البحث كاسم فئة (كما كان سابقاً) ⬇️
 
   const categoryResult = getCategory(productName);
 
-  // إذا كان الرد من دالة getCategory لا يحتوي على رسالة خطأ، يعني أنه وجد منتجات
   if (!categoryResult.includes('آسف') && !categoryResult.includes('من فضلك')) {
    return categoryResult;
   }
@@ -48,6 +62,10 @@ const getPrice = (productName) => {
   return `آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`;
  }
 };
+
+// ... (بقية الكود) ...
+
+
 
 // خريطة لترجمة الأسماء العربية الشائعة للفئات إلى الاسم الإنجليزي المستخدم في data.json
 const categoryMap = {
