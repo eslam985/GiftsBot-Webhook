@@ -27,13 +27,15 @@ const getPrice = (productName) => {
  }
 
  // 1. تنظيف الاسم من أحرف الجر والمسافات
- let cleanProductName = productName.trim().toLowerCase(); // ⬅️ إضافة toLowerCase هنا
+ let cleanProductName = productName.trim().toLowerCase();
 
  // مثال: يحول "بسلسلة فضة نسائية" إلى "سلسلة فضة نسائية"
  if (cleanProductName.startsWith('ب') && cleanProductName.length > 1) {
-  // بعد الإزالة، نعيد تنظيف المسافات والتأكد من الحروف الصغيرة
-  cleanProductName = cleanProductName.substring(1).trim();
+  // بعد الإزالة، نعيد تنظيف المسافات والتحويل إلى حروف صغيرة (للتأكد من الثبات)
+  cleanProductName = cleanProductName.substring(1).trim().toLowerCase(); // ⬅️ إضافة toLowerCase() هنا
  }
+
+
 
  // ⬇️ التغيير الحاسم: استخدام .filter والـ .includes ⬇️
  const potentialProducts = products.filter(product => {
