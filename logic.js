@@ -266,10 +266,60 @@ const getPriceRange = (min, max, originalQuery) => {
 }; // ⬅️ انتهت الدالة هنا
 
 
+
+
+/**
+ * تجلب جميع أسماء المنتجات المتاحة وتحولها إلى أزرار مضمنة (Inline Buttons).
+ * تستخدم للرد على نية 'Catalog.Overview'.
+ */
+function getAllProductsAsButtons() {
+ const productsData = require('./data.json'); // جلب البيانات
+
+ // 1. استخلاص جميع أسماء المنتجات
+ // نستخدم Set لضمان عدم تكرار الأسماء إذا كانت مكررة في الملف
+ const allProductNames = new Set();
+
+ // المرور على كل فئة وكل منتج لإضافة اسمه
+ Object.values(productsData.categories).forEach(category => {
+  category.products.forEach(product => {
+   allProductNames.add(product.name);
+  });
+ });
+
+ // 2. تحويل الأسماء إلى مصفوفة أزرار
+ const productButtons = Array.from(allProductNames).map(name => {
+  return [{
+   text: name, // اسم المنتج على الزر
+   callback_data: `سعر ${name}` // عند الضغط، يرسل طلب سعر
+  }];
+ });
+
+ // 3. بناء الـ Custom Payload وإرجاعه
+ const responseText = `لدينا مجموعة مختارة من الهدايا المميزة. يرجى اختيار المنتج مباشرة من القائمة:`;
+
+ return {
+  fulfillmentText: responseText,
+  fulfillmentMessages: [{
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "reply_markup": {
+      "inline_keyboard": productButtons
+     }
+    }
+   }
+  }]
+ };
+}
+
+
+
 // ... (تأكد من تصدير الدالة الجديدة)
 module.exports = {
  products,
  getPrice,
  getCategory,
- getPriceRange // ⬅️ إضافة الدالة للتصدير
+ getPriceRange, // ⬅️ إضافة الدالة للتصدير
+ getAllProductsAsButtons // ⬅️ إضافة الدالة للتصدير
 }; 

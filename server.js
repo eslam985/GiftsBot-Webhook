@@ -44,6 +44,10 @@ app.post('/', (req, res) => {
   // ⬅️ التصحيح: يجب أن تستبدل الكائن response بالكائن العائد من الدالة
   response = botLogic.getPriceRange(price_min, price_max, originalQuery);
 
+ } else if (intent === 'Catalog.Overview') {
+  // ⬅️ هنا سنستدعي الدالة الجديدة
+  response = botLogic.getAllProductsAsButtons();
+
  } else if (intent === 'CategoryQuery') {
 
   const categoryName = parameters.category_name;
