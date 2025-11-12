@@ -6,6 +6,10 @@ const app = express();
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
+
+
+
+
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
 app.post('/', (req, res) => {
  // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow ⬅️ يجب أن تكون هذه الخطوات أولاً
@@ -28,6 +32,13 @@ app.post('/', (req, res) => {
 
   responseText = botLogic.getPrice(productName);
 
+ } else if (intent === 'Product.PriceRange') { // ⬅️ إضافة المنطق الجديد هنا
+  const price_min = parameters.price_min;
+  const price_max = parameters.price_max;
+
+  // استدعاء الدالة الجديدة
+  responseText = botLogic.getPriceRange(price_min, price_max);
+
  } else if (intent === 'CategoryQuery') {
 
   const categoryName = parameters.category_name;
@@ -42,6 +53,10 @@ app.post('/', (req, res) => {
   fulfillmentText: responseText
  });
 });
+
+
+
+
 
 // ... (بقية الكود) ...
 // تشغيل الخادم على المنفذ 3000 (الذي يتصل به Ngrok)

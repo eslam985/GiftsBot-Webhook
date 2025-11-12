@@ -1,7 +1,6 @@
 // This is a dummy change to force Vercel to rebuild cache.
 const express = require('express');
 const bodyParser = require('body-parser');
-// ... (بقية الكود) ...
 // استيراد بيانات المنتجات من ملف data.json
 // يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
 const data = require('./data.json');
@@ -70,7 +69,7 @@ const getPrice = (productName) => {
  }
 };
 
-// ... (بقية الكود) ...
+
 
 
 
@@ -82,6 +81,8 @@ const categoryMap = {
  "هدايا رجالية": "Men's Gifts",
  // أضف المزيد من الفئات هنا إذا لزم الأمر
 };
+
+
 
 /**
  * دالة للحصول على قائمة بالمنتجات في فئة معينة.
@@ -131,9 +132,38 @@ const getCategory = (categoryName) => {
  * @returns {string} - رسالة توجيهية مع رابط الشراء.
  */
 
+// ... (بعد دالة getCategory)
 
-// ... (تأكد من إضافة الدالة إلى module.exports) ...
+const getPriceRange = (min, max) => {
+ // 1. استخلاص القيمة النقدية (الرقم) فقط من متغيرات Dialogflow
+ const minPrice = min ? min.amount : 0;
+ const maxPrice = max ? max.amount : Infinity; // إذا لم يحدد حد أقصى، فليكن لا نهائي
+
+ // 2. تصفية المنتجات بناءً على النطاق السعري
+ const matchingProducts = products.filter(product => {
+  return product.price >= minPrice && product.price <= maxPrice;
+ });
+
+ // 3. بناء الرد على العميل
+ if (matchingProducts.length === 0) {
+  return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${minPrice} - ${maxPrice} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
+ }
+
+ let response = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${minPrice} - ${maxPrice} جنيه):\n`;
+
+ // إضافة أسماء المنتجات والسعر إلى الرد
+ matchingProducts.forEach(product => {
+  response += `• ${product.name} (السعر: ${product.price} جنيه)\n`;
+ });
+
+ response += `\nلطلب أي منتج، اكتب اسمه.`;
+ return response;
+};
+
+// ... (تأكد من تصدير الدالة الجديدة)
 module.exports = {
+ products,
  getPrice,
  getCategory,
+ getPriceRange // ⬅️ إضافة الدالة للتصدير
 };
