@@ -135,10 +135,10 @@ const getCategory = (categoryName) => {
 // ... (بعد دالة getCategory)
 
 const getPriceRange = (min, max) => {
- // 1. استخلاص القيمة النقدية (الرقم) فقط من متغيرات Dialogflow
- const minPrice = min ? min.amount : 0;
- const maxPrice = max ? max.amount : Infinity; // إذا لم يحدد حد أقصى، فليكن لا نهائي
-
+ // 1. استخلاص القيمة النقدية (الرقم) مباشرة (تم تغيير min/max من كائنات إلى أرقام خام)
+ // الآن المتغيرات min و max هي أرقام (number) وليست كائنات (object)
+ const minPrice = min || 0;
+ const maxPrice = max || Infinity; // إذا لم يحدد حد أقصى، فليكن لا نهائي
  // 2. تصفية المنتجات بناءً على النطاق السعري
  const matchingProducts = products.filter(product => {
   return product.price >= minPrice && product.price <= maxPrice;
