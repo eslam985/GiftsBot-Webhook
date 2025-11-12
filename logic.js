@@ -124,6 +124,10 @@ const getCategory = (categoryName) => {
   return `آسف، لا توجد حاليًا هدايا في فئة "${categoryName}" لدينا.`;
  }
 };
+
+
+
+
 // ... (في نهاية ملف logic.js، قبل module.exports) ...
 
 /**
@@ -134,15 +138,16 @@ const getCategory = (categoryName) => {
 
 // ... (بعد دالة getCategory)
 const getPriceRange = (min, max) => {
- // 1. استخلاص القيمة النقدية (الرقم) مباشرة
- let minPrice = min || 0;
- let maxPrice = max || Infinity;
+ // 1. استخلاص القيمة النقدية (الرقم) فقط من كائنات Dialogflow
+ // يجب أن تكون الدالة قادرة على التعامل مع أي منهما (رقم أو كائن عملة)
+ let minPrice = (min && typeof min.amount === 'number') ? min.amount : min || 0;
+ let maxPrice = (max && typeof max.amount === 'number') ? max.amount : max || Infinity;
 
- // ⬇️ التعديل الحاسم: التأكد من أن الحد الأدنى أصغر من الحد الأقصى ⬇️
+ // ⬇️ منطق التبادل الذي أضفناه يبقى كما هو، لكن نستخدم minPrice و maxPrice ⬇️
  if (minPrice > maxPrice && maxPrice !== Infinity) {
   [minPrice, maxPrice] = [maxPrice, minPrice]; // تبديل القيم إذا كانت معكوسة
  }
- // ⬆️ نهاية التعديل الحاسم ⬆️
+ // ⬆️ نهاية منطق التبادل ⬆️
 
  // 2. تصفية المنتجات بناءً على النطاق السعري
  const matchingProducts = products.filter(product => {
