@@ -133,12 +133,17 @@ const getCategory = (categoryName) => {
  */
 
 // ... (بعد دالة getCategory)
-
 const getPriceRange = (min, max) => {
- // 1. استخلاص القيمة النقدية (الرقم) مباشرة (تم تغيير min/max من كائنات إلى أرقام خام)
- // الآن المتغيرات min و max هي أرقام (number) وليست كائنات (object)
- const minPrice = min || 0;
- const maxPrice = max || Infinity; // إذا لم يحدد حد أقصى، فليكن لا نهائي
+ // 1. استخلاص القيمة النقدية (الرقم) مباشرة
+ let minPrice = min || 0;
+ let maxPrice = max || Infinity;
+
+ // ⬇️ التعديل الحاسم: التأكد من أن الحد الأدنى أصغر من الحد الأقصى ⬇️
+ if (minPrice > maxPrice && maxPrice !== Infinity) {
+  [minPrice, maxPrice] = [maxPrice, minPrice]; // تبديل القيم إذا كانت معكوسة
+ }
+ // ⬆️ نهاية التعديل الحاسم ⬆️
+
  // 2. تصفية المنتجات بناءً على النطاق السعري
  const matchingProducts = products.filter(product => {
   return product.price >= minPrice && product.price <= maxPrice;
@@ -146,6 +151,7 @@ const getPriceRange = (min, max) => {
 
  // 3. بناء الرد على العميل
  if (matchingProducts.length === 0) {
+  // نستخدم minPrice و maxPrice المعدلتين في الرد
   return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${minPrice} - ${maxPrice} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
  }
 
