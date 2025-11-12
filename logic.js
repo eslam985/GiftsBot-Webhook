@@ -134,51 +134,67 @@ const getCategory = (categoryName) => {
  * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
  * @returns {string} - رسالة توجيهية مع رابط الشراء.
  */
-
 // ... (بعد دالة getCategory)
 // ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
 const getPriceRange = (min, max, originalQuery) => {
- // 1. استخلاص القيمة النقدية (الرقم) فقط من كائنات Dialogflow
- let minPrice = (min && typeof min.amount === 'number') ? min.amount : min || 0;
- let maxPrice = (max && typeof max.amount === 'number') ? max.amount : max || Infinity;
+ // 1. استخلاص القيمة الافتراضية: نفترض الفشل التام من Dialogflow في البداية
+ let minPrice = 0;
+ let maxPrice = Infinity;
 
- // ⬇️ المنطق الحاسم: إذا كانت العملة مفقودة، نحاول قراءة العملة من النص الأصلي ⬇️
- // إذا كانت قيم maxPrice هي Infinity، هذا يعني أن العميل سأل عن حد أقصى (مثل أقل من 300) لكن Dialogflow لم يستخرج العملة.
- // وبما أننا في نية النطاق السعري، فإن أي رقم يستخرجه Dialogflow في هذه الحالة هو الحد الأقصى.
+ // ⬇️ منطق استخلاص الرقم من النص الأصلي (لتجاوز فشل Dialogflow) ⬇️
+ // يتم التنفيذ فقط إذا لم يتمكن Dialogflow من استخلاص أي قيم رقمية على الإطلاق
+ const matches = originalQuery.match(/(\d+)/); // البحث عن الأرقام في النص الخام
 
- // الحل الأبسط: إذا كانت maxPrice هي Infinity (أي لم يتم تعيينها) و minPrice هي 0، 
- // فهذا يعني أن Dialogflow لم يستخرج أي قيم عملة على الإطلاق.
- // بما أننا سنستخدم @sys.number الآن، سنتجاهل الكود أعلاه، ونعود للثبات.
+ // إذا وجدنا رقماً في النص الخام
+ if (matches && matches.length > 1) {
+  const rawNumber = parseInt(matches[1]);
 
- // **نعتمد على أن العميل سيستخدم @sys.number (أرقام خام) داخل Dialogflow**
+  // التحقق من كلمات مفتاحية (بين X و Y)
+  if (originalQuery.includes('بين') && originalQuery.match(/(\d+)/g).length >= 2) {
+   // إذا كانت الجملة تحتوي على 'بين' وأكثر من رقم، نعتمد على ما أرسله Dialogflow
+   // نستخدم min و max مباشرة بعد التأكد من نوعهما (قد يكونا كائن عملة أو رقم خام)
+   minPrice = (min && typeof min.amount === 'number') ? min.amount : min || 0;
+   maxPrice = (max && typeof max.amount === 'number') ? max.amount : max || Infinity;
 
- // ⬇️ المنطق الجديد لتجاهل المشكلة وعزل الحل ⬇️
- if (originalQuery && originalQuery.includes('جنية') && max === undefined && min !== undefined) {
-  // إذا كان المستخدم كتب (أقل من 300 جنية) لكن Dialogflow فشل
-  // سنفترض أن القيمة التي استخرجت هي الحد الأقصى.
-  // سنعود هنا إلى الاعتماد على @sys.number
-  if (typeof min === 'number' && min > 0) {
-   maxPrice = min;
+   // نستخدم منطق التبادل الذي أثبت نجاحه:
+   if (minPrice > maxPrice && maxPrice !== Infinity) {
+    [minPrice, maxPrice] = [maxPrice, minPrice];
+   }
+
+  } else if (rawNumber > 0 && (originalQuery.includes('أقل من') || originalQuery.includes('أقصى سعر') || originalQuery.includes('جنية'))) {
+   // إذا وجدنا رقم وكلمة 'أقل من' أو 'جنية'، نعتبره الحد الأقصى
+   maxPrice = rawNumber;
    minPrice = 0;
+  } else if (rawNumber > 0 && (originalQuery.includes('أكثر من') || originalQuery.includes('يبدأ من'))) {
+   // إذا وجدنا رقم وكلمة 'أكثر من'، نعتبره الحد الأدنى
+   minPrice = rawNumber;
+   maxPrice = Infinity;
+  } else {
+   // في حالة عدم وجود كلمة مفتاحية، نعتبر الرقم هو الحد الأقصى افتراضياً (للبحث عن هدايا)
+   maxPrice = rawNumber;
   }
  }
 
- // 2. منطق التبادل (مهم جداً للحالتين)
- if (minPrice > maxPrice && maxPrice !== Infinity) {
-  [minPrice, maxPrice] = [maxPrice, minPrice];
- }
- // 3. تصفية المنتجات بناءً على النطاق السعري
+
+ // 2. تصفية المنتجات بناءً على النطاق السعري
  const matchingProducts = products.filter(product => {
   return product.price >= minPrice && product.price <= maxPrice;
  });
 
  // 3. بناء الرد على العميل
+ // ⬇️ هنا نجهز المتغيرات النصية للعرض ⬇️
+ const displayMin = minPrice;
+ const displayMax = (maxPrice === Infinity) ? 'بلا حد أقصى' : maxPrice; // ⬅️ تعديل عرض Infinity
+
  if (matchingProducts.length === 0) {
-  // نستخدم minPrice و maxPrice المعدلتين في الرد
-  return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${minPrice} - ${maxPrice} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
+  // نستخدم displayMin و displayMax في الرد
+  return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${displayMin} - ${displayMax} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
  }
 
- let response = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${minPrice} - ${maxPrice} جنيه):\n`;
+ let response = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه):\n`; // ⬅️ استخدام المتغيرات الجديدة
+
+ // ... (بقية الكود كما هو) ...
+
 
  // إضافة أسماء المنتجات والسعر إلى الرد
  matchingProducts.forEach(product => {
