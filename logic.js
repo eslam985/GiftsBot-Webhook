@@ -160,13 +160,13 @@ const getPriceRange = (min, max, originalQuery) => {
    if (minPrice > maxPrice && maxPrice !== Infinity) {
     [minPrice, maxPrice] = [maxPrice, minPrice];
    }
-
-  } else if (rawNumber > 0 && (originalQuery.includes('أقل من') || originalQuery.includes('أقصى سعر') || originalQuery.includes('جنية'))) {
-   // إذا وجدنا رقم وكلمة 'أقل من' أو 'جنية'، نعتبره الحد الأقصى
-   maxPrice = rawNumber;
-   minPrice = 0;
-  } else if (rawNumber > 0 && (originalQuery.includes('أكثر من') || originalQuery.includes('يبدأ من'))) {
-   // إذا وجدنا رقم وكلمة 'أكثر من'، نعتبره الحد الأدنى
+  } else if (rawNumber > 0 && (
+   originalQuery.includes('أكثر من') ||
+   originalQuery.includes('يبدأ من') ||
+   originalQuery.includes('أكبر من') || // ⬅️ إضافة الكلمة المفقودة
+   originalQuery.includes('تزيد عن')    // ⬅️ إضافة الكلمة المفقودة
+  )) {
+   // إذا وجدنا أكثر من/يبدأ من/أكبر من/تزيد عن، نعتبره الحد الأدنى (minPrice)
    minPrice = rawNumber;
    maxPrice = Infinity;
   } else {
