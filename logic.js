@@ -267,27 +267,18 @@ const getPriceRange = (min, max, originalQuery) => {
 
 
 
-
 /**
  * تجلب جميع أسماء المنتجات المتاحة وتحولها إلى أزرار مضمنة (Inline Buttons).
  * تستخدم للرد على نية 'Catalog.Overview'.
  */
 function getAllProductsAsButtons() {
- const productsData = require('./data.json'); // جلب البيانات
+ // ⬅️ استخدام مصفوفة المنتجات الجاهزة والمستوردة في بداية logic.js
 
- // 1. استخلاص جميع أسماء المنتجات
- // نستخدم Set لضمان عدم تكرار الأسماء إذا كانت مكررة في الملف
- const allProductNames = new Set();
-
- // المرور على كل فئة وكل منتج لإضافة اسمه
- Object.values(productsData.categories).forEach(category => {
-  category.products.forEach(product => {
-   allProductNames.add(product.name);
-  });
- });
+ // 1. استخلاص جميع أسماء المنتجات مباشرة من مصفوفة 'products'
+ const allProductNames = products.map(product => product.name);
 
  // 2. تحويل الأسماء إلى مصفوفة أزرار
- const productButtons = Array.from(allProductNames).map(name => {
+ const productButtons = Array.from(new Set(allProductNames)).map(name => {
   return [{
    text: name, // اسم المنتج على الزر
    callback_data: `سعر ${name}` // عند الضغط، يرسل طلب سعر
@@ -295,6 +286,7 @@ function getAllProductsAsButtons() {
  });
 
  // 3. بناء الـ Custom Payload وإرجاعه
+ // ... (بقية الكود الخاص ببناء الـ Payload يبقى كما هو) ...
  const responseText = `لدينا مجموعة مختارة من الهدايا المميزة. يرجى اختيار المنتج مباشرة من القائمة:`;
 
  return {
@@ -312,7 +304,6 @@ function getAllProductsAsButtons() {
   }]
  };
 }
-
 
 
 // ... (تأكد من تصدير الدالة الجديدة)
