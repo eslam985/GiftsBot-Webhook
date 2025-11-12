@@ -35,9 +35,13 @@ app.post('/', (req, res) => {
   response.fulfillmentText = botLogic.getPrice(productName);
 
  } else if (intent === 'Product.PriceRange') {
-  // ... (منطق استخلاص price_min/max/originalQuery) ...
 
-  // ⬅️ إذا كانت getPriceRange ترجع نصاً، نضعه في fulfillmentText
+  // ⬅️ التصحيح: يجب تعريف واستخلاص المعاملات من Dialogflow parameters 
+  const price_min = parameters.price_min;
+  const price_max = parameters.price_max;
+  const originalQuery = req.body.queryResult.queryText; // هذا يأتي من النص الأصلي
+
+  // ⬅️ إرسال القيم المستخلصة إلى دالة getPriceRange
   response.fulfillmentText = botLogic.getPriceRange(price_min, price_max, originalQuery);
 
  } else if (intent === 'CategoryQuery') {
