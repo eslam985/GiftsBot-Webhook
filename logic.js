@@ -227,27 +227,43 @@ const getPriceRange = (min, max, originalQuery) => {
  // 3. بناء الرد على العميل
  // ⬇️ هنا نجهز المتغيرات النصية للعرض ⬇️
  const displayMin = minPrice;
- const displayMax = (maxPrice === Infinity) ? 'بلا حد أقصى' : maxPrice; // ⬅️ تعديل عرض Infinity
+ const displayMax = (maxPrice === Infinity) ? 'بلا حد أقصى' : maxPrice;
 
  if (matchingProducts.length === 0) {
-  // نستخدم displayMin و displayMax في الرد
-  return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${displayMin} - ${displayMax} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
+  // نستخدم displayMin و displayMax في الرد النصي العادي
+  return {
+   fulfillmentText: `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${displayMin} - ${displayMax} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`
+  };
  }
 
- let response = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه):\n`; // ⬅️ استخدام المتغيرات الجديدة
-
- // ... (بقية الكود كما هو) ...
-
-
- // إضافة أسماء المنتجات والسعر إلى الرد
- matchingProducts.forEach(product => {
-  response += `• ${product.name} (السعر: ${product.price} جنيه)\n`;
+ // ⬅️ 1. بناء مصفوفة الأزرار: كل منتج في صف منفصل
+ const productButtons = matchingProducts.map(product => {
+  return [{
+   text: `${product.name} (السعر: ${product.price} جنيه)`, // اسم المنتج والسعر على الزر
+   // عند النقر، نرسل طلب نصي لـ Dialogflow ليبحث عن السعر
+   callback_data: `سعر ${product.name}`
+  }];
  });
 
- response += `\nلطلب أي منتج، اكتب اسمه.`;
- return response;
-};
+ // ⬅️ 2. بناء الـ Custom Payload وإرجاعه
+ const responseText = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه). اختر المنتج الذي تريده:`;
 
+ return {
+  fulfillmentText: responseText, // النص العادي (احتياطي)
+  fulfillmentMessages: [{
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "reply_markup": {
+      "inline_keyboard": productButtons // مصفوفة الأزرار التي بنيناها
+     }
+    }
+   }
+  }]
+ };
+
+}; // ⬅️ انتهت الدالة هنا
 
 
 // ... (تأكد من تصدير الدالة الجديدة)
