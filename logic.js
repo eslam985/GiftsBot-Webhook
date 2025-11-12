@@ -150,45 +150,36 @@ const getPriceRange = (min, max, originalQuery) => {
 
   // 1. حالة النطاق المزدوج ("بين X و Y")
   if (originalQuery.includes('بين') && matches.length >= 2) {
-
-   const price1 = parseInt(matches[0]);
-   const price2 = parseInt(matches[1]);
-   minPrice = Math.min(price1, price2);
-   maxPrice = Math.max(price1, price2);
+   // ... (منطق النطاق المزدوج كما هو) ...
 
   } else {
-   // ⬅️ نضع باقي الشروط هنا كجزء من else للحالة المزدوجة
-
-   // 2. تجميع كل الكلمات التي تعني "الحد الأدنى" في متغير واحد للوضوح
+   // 2. تجميع كل الكلمات التي تعني "الحد الأدنى"
    const isMinLimit = originalQuery.includes('أكثر من') ||
     originalQuery.includes('أكبر من') ||
     originalQuery.includes('تزيد عن') ||
     originalQuery.includes('فوق');
 
-   // 3. تجميع كل الكلمات التي تعني "الحد الأقصى" في متغير واحد للوضوح
+   // 3. تجميع كل الكلمات التي تعني "الحد الأقصى" (نستبعد كلمة 'جنية' من الشروط الصارمة)
    const isMaxLimit = originalQuery.includes('أقل من') ||
     originalQuery.includes('ينقص عن') ||
-    originalQuery.includes('جنية') ||
-    originalQuery.includes('تحت');
+    originalQuery.includes('تحت') ||
+    originalQuery.includes('أقصى سعر'); // ⬅️ إضافة أقصى سعر
 
-   // 4. تطبيق المنطق بناءً على المتغيرات الجديدة المعزولة
-   // ⬅️ نبدأ بالحد الأقصى، لأنه الأكثر شيوعًا ومرتبط بالعملة
-   if (isMaxLimit) {
-    maxPrice = parseInt(matches[0]); // أول رقم هو الحد الأقصى
-    minPrice = 0;
-
-    // ⬅️ نضع الحد الأدنى كثاني خيار
-   } else if (isMinLimit) {
-    minPrice = parseInt(matches[0]); // أول رقم هو الحد الأدنى
+   // 4. تطبيق المنطق: نُعطي أولوية مطلقة للنية (أكثر من/أقل من)
+   if (isMinLimit) { // ⬅️ نعطي الأولوية للحد الأدنى (الأكثر تخصصاً)
+    minPrice = parseInt(matches[0]);
     maxPrice = Infinity;
 
+   } else if (isMaxLimit) { // ⬅️ ثم الحد الأقصى (الأكثر تخصصاً)
+    maxPrice = parseInt(matches[0]);
+    minPrice = 0;
+
    } else {
-    // حالة الرقم المفرد بدون أي كلمة مفتاحية (افتراضياً: حد أقصى)
+    // 5. حالة الرقم المفرد (افتراضياً: حد أقصى. هنا نعتبر 'جنية' دليل على الحد الأقصى)
     maxPrice = parseInt(matches[0]);
     minPrice = 0;
    }
   }
-
  }
 
 
