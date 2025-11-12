@@ -77,15 +77,13 @@ const getPrice = (productName) => {
 
 
 // خريطة لترجمة الأسماء العربية الشائعة للفئات إلى الاسم الإنجليزي المستخدم في data.json
+// ... (في logic.js) ...
 const categoryMap = {
  'مجوهرات': 'Jewelry',
- 'إلكترونيات': 'Electronics',
- 'الكترونيات': 'Electronics',
+ // ...
  "هدايا رجالية": "Men's Gifts",
- // ⬅️ إضافة Home Goods هنا
- 'home goods': 'Home Goods', // نستخدم الحروف الصغيرة لاسم المفتاح
- 'مستلزمات منزلية': 'Home Goods', // مثال لترجمة عربية
- // أضف المزيد من الفئات هنا إذا لزم الأمر
+ 'home goods': 'Home Goods',
+ 'مستلزمات منزلية': 'Home Goods', // ⬅️ تأكد من إضافة هذا السطر
 };
 
 
