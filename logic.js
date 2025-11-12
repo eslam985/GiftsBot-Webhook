@@ -136,6 +136,7 @@ const getCategory = (categoryName) => {
  */
 // ... (بعد دالة getCategory)
 // ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
+// ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
 const getPriceRange = (min, max, originalQuery) => {
  // 1. استخلاص القيمة الافتراضية
  let minPrice = 0;
@@ -152,35 +153,41 @@ const getPriceRange = (min, max, originalQuery) => {
 
    const price1 = parseInt(matches[0]);
    const price2 = parseInt(matches[1]);
-
    minPrice = Math.min(price1, price2);
    maxPrice = Math.max(price1, price2);
 
-   // 2. حالة الحد الأدنى (أكثر من / أكبر من / تزيد عن)
-  } else if (originalQuery.includes('أكثر من') ||
-   originalQuery.includes('أكبر من') ||
-   originalQuery.includes('تزيد عن') ||
-   originalQuery.includes('فوق')) {
-
-   minPrice = parseInt(matches[0]); // أول رقم هو الحد الأدنى
-   maxPrice = Infinity;
-
-   // 3. حالة الحد الأقصى (أقل من / ينقص عن / جنية مفردة)
-  } else if (originalQuery.includes('أقل من') ||
-   originalQuery.includes('ينقص عن') ||
-   originalQuery.includes('جنية') || // وجود كلمة جنية مع رقم مفرد يعني حد أقصى
-   originalQuery.includes('تحت')) {
-
-   maxPrice = parseInt(matches[0]); // أول رقم هو الحد الأقصى
-   minPrice = 0;
-
-   // 4. حالة الرقم المفرد بدون أي كلمة مفتاحية (افتراضياً: حد أقصى)
   } else {
-   maxPrice = parseInt(matches[0]);
-   minPrice = 0;
-  }
- }
+   // ⬅️ نضع باقي الشروط هنا كجزء من else للحالة المزدوجة
 
+   // 2. تجميع كل الكلمات التي تعني "الحد الأدنى" في متغير واحد للوضوح
+   const isMinLimit = originalQuery.includes('أكثر من') ||
+    originalQuery.includes('أكبر من') ||
+    originalQuery.includes('تزيد عن') ||
+    originalQuery.includes('فوق');
+
+   // 3. تجميع كل الكلمات التي تعني "الحد الأقصى" في متغير واحد للوضوح
+   const isMaxLimit = originalQuery.includes('أقل من') ||
+    originalQuery.includes('ينقص عن') ||
+    originalQuery.includes('جنية') ||
+    originalQuery.includes('تحت');
+
+   // 4. تطبيق المنطق بناءً على المتغيرات الجديدة المعزولة
+   if (isMinLimit) {
+    minPrice = parseInt(matches[0]); // أول رقم هو الحد الأدنى
+    maxPrice = Infinity;
+
+   } else if (isMaxLimit) {
+    maxPrice = parseInt(matches[0]); // أول رقم هو الحد الأقصى
+    minPrice = 0;
+
+   } else {
+    // حالة الرقم المفرد بدون أي كلمة مفتاحية (افتراضياً: حد أقصى)
+    maxPrice = parseInt(matches[0]);
+    minPrice = 0;
+   }
+  }
+
+ }
 
 
  // 2. تصفية المنتجات بناءً على النطاق السعري
@@ -211,6 +218,8 @@ const getPriceRange = (min, max, originalQuery) => {
  response += `\nلطلب أي منتج، اكتب اسمه.`;
  return response;
 };
+
+
 
 // ... (تأكد من تصدير الدالة الجديدة)
 module.exports = {
