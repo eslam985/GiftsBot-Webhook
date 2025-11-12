@@ -96,10 +96,30 @@ const categoryMap = {
  * دالة للحصول على قائمة بالمنتجات في فئة معينة، تم تعديلها لإرجاع Custom Payload
  * يحتوي على أزرار مضمنة (Inline Buttons) في تليجرام.
  */
+/**
+ * دالة للحصول على قائمة بالمنتجات في فئة معينة، تم تعديلها لإرجاع Custom Payload
+ * يحتوي على أزرار مضمنة (Inline Buttons) في تليجرام.
+ */
 const getCategory = (categoryName) => {
- // ... (منطق تنظيف وتصفية المنتجات كما هو) ...
+ if (!categoryName) {
+  return { fulfillmentText: "من فضلك حدد اسم الفئة التي تبحث عنها." };
+ }
 
- // 4. تصفية المنتجات حسب الفئة
+ // 1. تنظيف القيمة من المسافات وتحويلها لحروف صغيرة
+ let cleanCategoryName = categoryName.toLowerCase().trim();
+
+ // 2. إزالة "الـ" من بداية الكلمة 
+ if (cleanCategoryName.startsWith('ال') && cleanCategoryName.length > 2) {
+  cleanCategoryName = cleanCategoryName.substring(2).trim();
+ }
+
+ // 3. محاولة ترجمة الاسم العربي إلى نظيره الإنجليزي في الخريطة
+ let searchCategory = categoryMap[cleanCategoryName] || categoryName;
+
+ // 4. توحيد الاسم الذي سنبحث به (سواء كان 'Jewelry' أو 'Electronics')
+ searchCategory = searchCategory.toLowerCase().trim();
+
+ // 5. تصفية المنتجات حسب الفئة
  const filteredProducts = products.filter(product =>
   product.category.toLowerCase().trim() === searchCategory
  );
