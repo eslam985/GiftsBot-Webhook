@@ -128,87 +128,96 @@ const getCategory = (categoryName) => {
 
 
 
-// ... (في نهاية ملف logic.js، قبل module.exports) ...
-/**
- * دالة لمعالجة طلبات الشراء وتوجيه المستخدم لصفحة الدفع.
- * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
- * @returns {string} - رسالة توجيهية مع رابط الشراء.
- */
-// ... (بعد دالة getCategory)
-// ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
-const getPriceRange = (min, max, originalQuery) => {
- // 1. استخلاص القيمة الافتراضية: نفترض الفشل التام من Dialogflow في البداية
- let minPrice = 0;
- let maxPrice = Infinity;
+ // ... (في نهاية ملف logic.js، قبل module.exports) ...
+ /**
+  * دالة لمعالجة طلبات الشراء وتوجيه المستخدم لصفحة الدفع.
+  * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
+  * @returns {string} - رسالة توجيهية مع رابط الشراء.
+  */
+ // ... (بعد دالة getCategory)
+ // ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
+ const getPriceRange = (min, max, originalQuery) => {
+  // 1. استخلاص القيمة الافتراضية
+  let minPrice = 0;
+  let maxPrice = Infinity;
 
- // ⬇️ منطق استخلاص الرقم من النص الأصلي (لتجاوز فشل Dialogflow) ⬇️
- // يتم التنفيذ فقط إذا لم يتمكن Dialogflow من استخلاص أي قيم رقمية على الإطلاق
- const matches = originalQuery.match(/(\d+)/); // البحث عن الأرقام في النص الخام
+  // ⬇️ منطق استخلاص الرقم من النص الأصلي (Regex) ⬇️
+  const matches = originalQuery.match(/(\d+)/);
 
- // إذا وجدنا رقماً في النص الخام
- if (matches && matches.length > 1) {
-  const rawNumber = parseInt(matches[1]);
+  // إذا وجدنا رقماً في النص الخام
+  if (matches && matches.length > 1) {
+   const rawNumber = parseInt(matches[1]);
 
-  // التحقق من كلمات مفتاحية (بين X و Y)
-  if (originalQuery.includes('بين') && originalQuery.match(/(\d+)/g).length >= 2) {
-   // إذا كانت الجملة تحتوي على 'بين' وأكثر من رقم، نعتمد على ما أرسله Dialogflow
-   // نستخدم min و max مباشرة بعد التأكد من نوعهما (قد يكونا كائن عملة أو رقم خام)
-   minPrice = (min && typeof min.amount === 'number') ? min.amount : min || 0;
-   maxPrice = (max && typeof max.amount === 'number') ? max.amount : max || Infinity;
+   // 1. حالة النطاق المزدوج ("بين X و Y")
+   if (originalQuery.includes('بين') && originalQuery.match(/(\d+)/g).length >= 2) {
+    // ... (منطق استخلاص النطاق المزدوج كما هو) ...
+    minPrice = (min && typeof min.amount === 'number') ? min.amount : min || 0;
+    maxPrice = (max && typeof max.amount === 'number') ? max.amount : max || Infinity;
 
-   // نستخدم منطق التبادل الذي أثبت نجاحه:
-   if (minPrice > maxPrice && maxPrice !== Infinity) {
-    [minPrice, maxPrice] = [maxPrice, minPrice];
+    if (minPrice > maxPrice && maxPrice !== Infinity) {
+     [minPrice, maxPrice] = [maxPrice, minPrice];
+    }
+
+    // 2. حالة الحد الأدنى ("أكثر من", "أكبر من")
+   } else if (rawNumber > 0 && (
+    originalQuery.includes('أكثر من') ||
+    originalQuery.includes('يبدأ من') ||
+    originalQuery.includes('أكبر من') ||
+    originalQuery.includes('تزيد عن')
+   )) {
+    minPrice = rawNumber; // تعيين الحد الأدنى
+    maxPrice = Infinity;
+
+    // 3. حالة الحد الأقصى ("أقل من", "جنيه" افتراضياً)
+   } else if (rawNumber > 0 && (
+    originalQuery.includes('أقل من') ||
+    originalQuery.includes('أقصى سعر') ||
+    originalQuery.includes('جنية') // نعتمد على 'جنية' كدليل على الحد الأقصى
+   )) {
+    maxPrice = rawNumber; // تعيين الحد الأقصى
+    minPrice = 0;
+
+    // 4. حالة الرقم المفرد (افتراضياً هو الحد الأقصى)
+   } else {
+    // في حالة وجود رقم مفرد بدون كلمة مفتاحية، نعتبره الحد الأقصى
+    maxPrice = rawNumber;
+    minPrice = 0;
    }
-  } else if (rawNumber > 0 && (
-   originalQuery.includes('أكثر من') ||
-   originalQuery.includes('يبدأ من') ||
-   originalQuery.includes('أكبر من') || // ⬅️ إضافة الكلمة المفقودة
-   originalQuery.includes('تزيد عن')    // ⬅️ إضافة الكلمة المفقودة
-  )) {
-   // إذا وجدنا أكثر من/يبدأ من/أكبر من/تزيد عن، نعتبره الحد الأدنى (minPrice)
-   minPrice = rawNumber;
-   maxPrice = Infinity;
-  } else {
-   // في حالة عدم وجود كلمة مفتاحية، نعتبر الرقم هو الحد الأقصى افتراضياً (للبحث عن هدايا)
-   maxPrice = rawNumber;
   }
- }
+
+  // 2. تصفية المنتجات بناءً على النطاق السعري
+  const matchingProducts = products.filter(product => {
+   return product.price >= minPrice && product.price <= maxPrice;
+  });
+
+  // 3. بناء الرد على العميل
+  // ⬇️ هنا نجهز المتغيرات النصية للعرض ⬇️
+  const displayMin = minPrice;
+  const displayMax = (maxPrice === Infinity) ? 'بلا حد أقصى' : maxPrice; // ⬅️ تعديل عرض Infinity
+
+  if (matchingProducts.length === 0) {
+   // نستخدم displayMin و displayMax في الرد
+   return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${displayMin} - ${displayMax} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
+  }
+
+  let response = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه):\n`; // ⬅️ استخدام المتغيرات الجديدة
+
+  // ... (بقية الكود كما هو) ...
 
 
- // 2. تصفية المنتجات بناءً على النطاق السعري
- const matchingProducts = products.filter(product => {
-  return product.price >= minPrice && product.price <= maxPrice;
- });
+  // إضافة أسماء المنتجات والسعر إلى الرد
+  matchingProducts.forEach(product => {
+   response += `• ${product.name} (السعر: ${product.price} جنيه)\n`;
+  });
 
- // 3. بناء الرد على العميل
- // ⬇️ هنا نجهز المتغيرات النصية للعرض ⬇️
- const displayMin = minPrice;
- const displayMax = (maxPrice === Infinity) ? 'بلا حد أقصى' : maxPrice; // ⬅️ تعديل عرض Infinity
+  response += `\nلطلب أي منتج، اكتب اسمه.`;
+  return response;
+ };
 
- if (matchingProducts.length === 0) {
-  // نستخدم displayMin و displayMax في الرد
-  return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${displayMin} - ${displayMax} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
- }
-
- let response = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه):\n`; // ⬅️ استخدام المتغيرات الجديدة
-
- // ... (بقية الكود كما هو) ...
-
-
- // إضافة أسماء المنتجات والسعر إلى الرد
- matchingProducts.forEach(product => {
-  response += `• ${product.name} (السعر: ${product.price} جنيه)\n`;
- });
-
- response += `\nلطلب أي منتج، اكتب اسمه.`;
- return response;
-};
-
-// ... (تأكد من تصدير الدالة الجديدة)
-module.exports = {
- products,
- getPrice,
- getCategory,
- getPriceRange // ⬅️ إضافة الدالة للتصدير
-}; 
+ // ... (تأكد من تصدير الدالة الجديدة)
+ module.exports = {
+  products,
+  getPrice,
+  getCategory,
+  getPriceRange // ⬅️ إضافة الدالة للتصدير
+ }; 
