@@ -129,7 +129,6 @@ const getCategory = (categoryName) => {
 
 
 // ... (في نهاية ملف logic.js، قبل module.exports) ...
-
 /**
  * دالة لمعالجة طلبات الشراء وتوجيه المستخدم لصفحة الدفع.
  * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
@@ -137,19 +136,38 @@ const getCategory = (categoryName) => {
  */
 
 // ... (بعد دالة getCategory)
-const getPriceRange = (min, max) => {
+// ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
+const getPriceRange = (min, max, originalQuery) => {
  // 1. استخلاص القيمة النقدية (الرقم) فقط من كائنات Dialogflow
- // يجب أن تكون الدالة قادرة على التعامل مع أي منهما (رقم أو كائن عملة)
  let minPrice = (min && typeof min.amount === 'number') ? min.amount : min || 0;
  let maxPrice = (max && typeof max.amount === 'number') ? max.amount : max || Infinity;
 
- // ⬇️ منطق التبادل الذي أضفناه يبقى كما هو، لكن نستخدم minPrice و maxPrice ⬇️
- if (minPrice > maxPrice && maxPrice !== Infinity) {
-  [minPrice, maxPrice] = [maxPrice, minPrice]; // تبديل القيم إذا كانت معكوسة
- }
- // ⬆️ نهاية منطق التبادل ⬆️
+ // ⬇️ المنطق الحاسم: إذا كانت العملة مفقودة، نحاول قراءة العملة من النص الأصلي ⬇️
+ // إذا كانت قيم maxPrice هي Infinity، هذا يعني أن العميل سأل عن حد أقصى (مثل أقل من 300) لكن Dialogflow لم يستخرج العملة.
+ // وبما أننا في نية النطاق السعري، فإن أي رقم يستخرجه Dialogflow في هذه الحالة هو الحد الأقصى.
 
- // 2. تصفية المنتجات بناءً على النطاق السعري
+ // الحل الأبسط: إذا كانت maxPrice هي Infinity (أي لم يتم تعيينها) و minPrice هي 0، 
+ // فهذا يعني أن Dialogflow لم يستخرج أي قيم عملة على الإطلاق.
+ // بما أننا سنستخدم @sys.number الآن، سنتجاهل الكود أعلاه، ونعود للثبات.
+
+ // **نعتمد على أن العميل سيستخدم @sys.number (أرقام خام) داخل Dialogflow**
+
+ // ⬇️ المنطق الجديد لتجاهل المشكلة وعزل الحل ⬇️
+ if (originalQuery && originalQuery.includes('جنية') && max === undefined && min !== undefined) {
+  // إذا كان المستخدم كتب (أقل من 300 جنية) لكن Dialogflow فشل
+  // سنفترض أن القيمة التي استخرجت هي الحد الأقصى.
+  // سنعود هنا إلى الاعتماد على @sys.number
+  if (typeof min === 'number' && min > 0) {
+   maxPrice = min;
+   minPrice = 0;
+  }
+ }
+
+ // 2. منطق التبادل (مهم جداً للحالتين)
+ if (minPrice > maxPrice && maxPrice !== Infinity) {
+  [minPrice, maxPrice] = [maxPrice, minPrice];
+ }
+ // 3. تصفية المنتجات بناءً على النطاق السعري
  const matchingProducts = products.filter(product => {
   return product.price >= minPrice && product.price <= maxPrice;
  });
@@ -177,4 +195,4 @@ module.exports = {
  getPrice,
  getCategory,
  getPriceRange // ⬅️ إضافة الدالة للتصدير
-};
+}; 

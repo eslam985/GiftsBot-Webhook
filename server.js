@@ -32,12 +32,14 @@ app.post('/', (req, res) => {
 
   responseText = botLogic.getPrice(productName);
 
- } else if (intent === 'Product.PriceRange') { // ⬅️ إضافة المنطق الجديد هنا
+ } else if (intent === 'Product.PriceRange') {
   const price_min = parameters.price_min;
   const price_max = parameters.price_max;
+  // ⬇️ التعديل هنا: استخلاص نص العميل الأصلي ⬇️
+  const originalQuery = req.body.queryResult.queryText;
 
   // استدعاء الدالة الجديدة
-  responseText = botLogic.getPriceRange(price_min, price_max);
+  responseText = botLogic.getPriceRange(price_min, price_max, originalQuery); // ⬅️ إضافة المتغير
 
  } else if (intent === 'CategoryQuery') {
 
