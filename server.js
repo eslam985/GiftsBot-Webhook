@@ -12,19 +12,26 @@ app.use(express.static('public'));
 // ... (في server.js) ...
 
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
+// الدالة الرئيسية لاستقبال طلبات Dialogflow
 app.post('/', (req, res) => {
  // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
  const intent = req.body.queryResult.intent.displayName;
  const parameters = req.body.queryResult.parameters;
 
- // ⬅️ يجب أن يكون هذا الرد هو الكائن الذي يحتوي على fulfillmentText أو fulfillmentMessages
  let response = {};
 
  // 2. مقارنة النية المستلمة بالنوايا الأخرى
  if (intent === 'Product.PriceFinal') {
-  // ... (منطق استخلاص productName) ...
 
-  // ⬅️ إذا كانت getPrice ترجع نصاً، نضعه في fulfillmentText
+  // ⬅️ تصحيح الخطأ البرمجي: يجب تعريف المنتج واستخلاصه من المعاملات هنا
+  let productName = parameters.ProductName;
+
+  // ⬅️ منطق التعامل مع حالة أن تكون القيمة مصفوفة (لمنع تعطل البوت)
+  if (Array.isArray(productName)) {
+   productName = productName[0];
+  }
+
+  // ⬅️ إرسال اسم المنتج النظيف لدالة getPrice
   response.fulfillmentText = botLogic.getPrice(productName);
 
  } else if (intent === 'Product.PriceRange') {
