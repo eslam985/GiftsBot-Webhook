@@ -10,6 +10,10 @@ const STORE_CONTACT_NUMBER = '01013080898'; // الرقم للعرض كنص
 const STORE_CONTACT_WHATSAPP = '201013080898'; // الرقم بالتنسيق الدولي (مثال: 201013080898)
 // ⬅️ بناء رابط واتساب القابل للنقر
 const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;
+
+
+
+
 /**
  * دالة للحصول على سعر ووصف منتج معين بناءً على اسمه.
  * تم تحديثها لاستخدام البحث الجزئي (includes) بدلاً من التطابق التام (===).
@@ -23,35 +27,37 @@ const getPrice = (productName) => {
  }
 
  // 1. تنظيف الاسم من أحرف الجر والمسافات
- let cleanProductName = productName.trim();
+ let cleanProductName = productName.trim().toLowerCase(); // ⬅️ إضافة toLowerCase هنا
 
  // مثال: يحول "بسلسلة فضة نسائية" إلى "سلسلة فضة نسائية"
  if (cleanProductName.startsWith('ب') && cleanProductName.length > 1) {
+  // بعد الإزالة، نعيد تنظيف المسافات والتأكد من الحروف الصغيرة
   cleanProductName = cleanProductName.substring(1).trim();
  }
 
  // ⬇️ التغيير الحاسم: استخدام .filter والـ .includes ⬇️
- // نبحث عن المنتجات التي يحتوي اسمها على جزء من اسم المنتج المُدخل
  const potentialProducts = products.filter(product => {
-  // البحث الآن سيستخدم cleanProductName (الخالي من الباء)
-  return product.name.toLowerCase().includes(cleanProductName.toLowerCase().trim());
+  // ⬅️ مقارنة اسم المنتج المخزن (المحول إلى حروف صغيرة) مع الاسم النظيف للمستخدم
+  return product.name.toLowerCase().includes(cleanProductName);
  });
  // ⬆️ نهاية التغيير الحاسم ⬆️
 
 
  // 3. التحقق من نتيجة البحث واختيار أفضل تطابق
  if (potentialProducts.length > 0) {
-  // نختار أفضل تطابق (الأطول هو الأفضل، أو نختار أول واحد)
-  let targetProduct = potentialProducts[0];
+  // ... (منطق اختيار targetProduct كما هو) ...
 
   // إذا كان هناك أكثر من منتج، يمكننا استخدام منطق لاختيار الأقرب
   if (potentialProducts.length > 1) {
-   // منطق لاختيار المنتج الذي يطابق الاسم المدخل بشكل كامل أولاً
-   const exactMatch = potentialProducts.find(p => p.name.toLowerCase().trim() === cleanProductName.toLowerCase().trim());
+   // ⬅️ تأكد من تطبيق toLowerCase() و trim() في المقارنة الدقيقة
+   const exactMatch = potentialProducts.find(p =>
+    p.name.toLowerCase().trim() === cleanProductName
+   );
    if (exactMatch) {
     targetProduct = exactMatch;
    }
   }
+
 
   // ⬇️ التعديل النهائي لدمج رابط الواتساب القابل للنقر ⬇️
   return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة مع صاحب المتجر عبر الاتصال أو واتساب:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
@@ -96,11 +102,11 @@ const getCategory = (categoryName) => {
 
  // ⬇️ التعديل النهائي والحاسم لإزالة الـ (التعريف) ⬇️
  // 1. تنظيف القيمة من المسافات وتحويلها لحروف صغيرة
- let cleanCategoryName = categoryName.toLowerCase().trim();
+ let cleanCategoryName = categoryName.toLowerCase().trim(); // ⬅️ تطبيق trim().toLowerCase() هنا
 
  // 2. إزالة "الـ" من بداية الكلمة (لحل مشكلة المجوهرات)
- // يتحقق مما إذا كانت تبدأ بـ "ال" ولديه حرف آخر بعدها
  if (cleanCategoryName.startsWith('ال') && cleanCategoryName.length > 2) {
+  // بعد الإزالة، نعيد تنظيف المسافات (لو كانت هناك مسافات غير مقصودة)
   cleanCategoryName = cleanCategoryName.substring(2).trim();
  }
 
@@ -108,10 +114,12 @@ const getCategory = (categoryName) => {
  let searchCategory = categoryMap[cleanCategoryName] || categoryName;
 
  // توحيد الاسم الذي سنبحث به (سواء كان 'Jewelry' أو 'Electronics')
+ // ⬅️ التأكد من توحيد الصيغة قبل البحث
  searchCategory = searchCategory.toLowerCase().trim();
 
  // 4. تصفية المنتجات حسب الفئة
  const filteredProducts = products.filter(product =>
+  // ⬅️ مقارنة اسم الفئة المخزن (المحول إلى حروف صغيرة) مع الاسم النظيف
   product.category.toLowerCase().trim() === searchCategory
  );
 
