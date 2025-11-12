@@ -41,8 +41,8 @@ app.post('/', (req, res) => {
   const price_max = parameters.price_max;
   const originalQuery = req.body.queryResult.queryText; // هذا يأتي من النص الأصلي
 
-  // ⬅️ إرسال القيم المستخلصة إلى دالة getPriceRange
-  response.fulfillmentText = botLogic.getPriceRange(price_min, price_max, originalQuery);
+  // ⬅️ التصحيح: يجب أن تستبدل الكائن response بالكائن العائد من الدالة
+  response = botLogic.getPriceRange(price_min, price_max, originalQuery);
 
  } else if (intent === 'CategoryQuery') {
 
