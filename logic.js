@@ -172,13 +172,15 @@ const getPriceRange = (min, max, originalQuery) => {
     originalQuery.includes('تحت');
 
    // 4. تطبيق المنطق بناءً على المتغيرات الجديدة المعزولة
-   if (isMinLimit) {
-    minPrice = parseInt(matches[0]); // أول رقم هو الحد الأدنى
-    maxPrice = Infinity;
-
-   } else if (isMaxLimit) {
+   // ⬅️ نبدأ بالحد الأقصى، لأنه الأكثر شيوعًا ومرتبط بالعملة
+   if (isMaxLimit) {
     maxPrice = parseInt(matches[0]); // أول رقم هو الحد الأقصى
     minPrice = 0;
+
+    // ⬅️ نضع الحد الأدنى كثاني خيار
+   } else if (isMinLimit) {
+    minPrice = parseInt(matches[0]); // أول رقم هو الحد الأدنى
+    maxPrice = Infinity;
 
    } else {
     // حالة الرقم المفرد بدون أي كلمة مفتاحية (افتراضياً: حد أقصى)
