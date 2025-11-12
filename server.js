@@ -9,51 +9,44 @@ app.use(express.static('public'));
 
 
 
+// ... (في server.js) ...
 
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
 app.post('/', (req, res) => {
- // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow ⬅️ يجب أن تكون هذه الخطوات أولاً
+ // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
  const intent = req.body.queryResult.intent.displayName;
  const parameters = req.body.queryResult.parameters;
- let responseText = '';
+
+ // ⬅️ يجب أن يكون هذا الرد هو الكائن الذي يحتوي على fulfillmentText أو fulfillmentMessages
+ let response = {};
 
  // 2. مقارنة النية المستلمة بالنوايا الأخرى
- if (intent === 'Product.PriceFinal') { // ⬅️ بدأنا بـ 'if' بدلاً من 'else if' لأنها الآن أول كتلة تحقق
+ if (intent === 'Product.PriceFinal') {
+  // ... (منطق استخلاص productName) ...
 
-  let productName = parameters.ProductName;
-
-  const resolvedValue = req.body.queryResult.parameters.ProductName;
-
-  if (Array.isArray(resolvedValue)) {
-   productName = resolvedValue[0];
-  } else {
-   productName = resolvedValue;
-  }
-
-  responseText = botLogic.getPrice(productName);
+  // ⬅️ إذا كانت getPrice ترجع نصاً، نضعه في fulfillmentText
+  response.fulfillmentText = botLogic.getPrice(productName);
 
  } else if (intent === 'Product.PriceRange') {
-  const price_min = parameters.price_min;
-  const price_max = parameters.price_max;
-  // ⬇️ التعديل هنا: استخلاص نص العميل الأصلي ⬇️
-  const originalQuery = req.body.queryResult.queryText;
+  // ... (منطق استخلاص price_min/max/originalQuery) ...
 
-  // استدعاء الدالة الجديدة
-  responseText = botLogic.getPriceRange(price_min, price_max, originalQuery); // ⬅️ إضافة المتغير
+  // ⬅️ إذا كانت getPriceRange ترجع نصاً، نضعه في fulfillmentText
+  response.fulfillmentText = botLogic.getPriceRange(price_min, price_max, originalQuery);
 
  } else if (intent === 'CategoryQuery') {
 
   const categoryName = parameters.category_name;
-  responseText = botLogic.getCategory(categoryName);
+  // ⬅️ هنا، getCategory سترجع كائناً يحتوي على fulfillmentText/fulfillmentMessages
+  response = botLogic.getCategory(categoryName);
 
  } else {
   // نية غير معروفة (Default Fallback)
-  responseText = 'عفواً، لم أفهم سؤالك. يرجى سؤالي عن سعر منتج أو فئة معينة.';
+  response.fulfillmentText = 'عفواً، لم أفهم سؤالك. يرجى سؤالي عن سعر منتج أو فئة معينة.';
  }
+
  // 3. إرسال الرد مرة أخرى إلى Dialogflow
- res.json({
-  fulfillmentText: responseText
- });
+ // ⬅️ نرسل الكائن response بالكامل (بدلاً من الاقتصار على fulfillmentText)
+ res.json(response);
 });
 
 
