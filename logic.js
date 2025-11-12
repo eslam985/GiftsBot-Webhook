@@ -82,6 +82,9 @@ const categoryMap = {
  'إلكترونيات': 'Electronics',
  'الكترونيات': 'Electronics',
  "هدايا رجالية": "Men's Gifts",
+ // ⬅️ إضافة Home Goods هنا
+ 'home goods': 'Home Goods', // نستخدم الحروف الصغيرة لاسم المفتاح
+ 'مستلزمات منزلية': 'Home Goods', // مثال لترجمة عربية
  // أضف المزيد من الفئات هنا إذا لزم الأمر
 };
 
