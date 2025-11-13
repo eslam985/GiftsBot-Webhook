@@ -101,11 +101,12 @@ app.post('/', (req, res) => {
   };
 
  } else if (intent === 'CategoryQuery') {
-  const categoryName = parameters.category_name;
-  response = botLogic.getCategory(categoryName);
-
+  // ...
+ } else if (intent === 'SHOW_CATEGORIES') {
+  // ⬅️ الإضافة الجديدة: معالجة أمر الأقسام المخصص
+  response = botLogic.getCategoryButtons();
  } else {
-  // ⬅️ نية غير معروفة (Default Fallback): نستخدم الدالة الجديدة
+  // ⬅️ نية غير معروفة (Default Fallback):
   response = botLogic.getHelpPayload();
  }
 
