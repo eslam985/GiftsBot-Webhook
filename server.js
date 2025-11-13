@@ -18,37 +18,31 @@ app.post('/', (req, res) => {
  if (callbackQuery) {
   const data = callbackQuery.data;
   let newResponse;
-  let telegramResponse = {};
 
-  if (data === 'CATEGORY_CALL') { // ⬅️ معالجة زر الكتالوج
+  // ⬅️ معالجة الأزرار الثلاثة مباشرة
+  if (data === '/catalog') {
    newResponse = botLogic.getAllProductsAsButtons();
-  } else if (data === 'RECOMMENDATION_CALL') { // ⬅️ معالجة زر التوصيات
+  } else if (data === '/recommend') {
    newResponse = botLogic.getRecommendations();
+  } else if (data === 'SHOW_CATEGORIES') {
+   newResponse = botLogic.getCategoryButtons(); // ⬅️ الدالة الجديدة
   } else {
-   // إذا لم يكن زرًا مهمًا، أرسل رداً فارغاً لإنهاء الـ callback
-   return res.json({ method: 'answerCallbackQuery', callback_query_id: callbackQuery.id });
+   // إذا كان أي زر آخر (مثل أزرار الفئات)، دع Dialogflow يعالجه
+   // لكن أرسل رداً فورياً لإغلاق الـ Callback
+   return res.json({});
   }
 
-  // 1. يجب أولاً الرد على Telegram لإنهاء الـ callback query (منع تكرار الرسالة)
-  // هذا لا يتم عبر Dialogflow، بل عبر API Telegram
-  // هذا الرد لا ينشر رسالة جديدة
-  const answerCallback = {
-   method: "answerCallbackQuery",
-   callback_query_id: callbackQuery.id
-  };
-
-  // 2. الآن نجهز رسالة Telegram لإرسال الرد الجديد (الكتالوج/التوصيات)
-  const sendMessage = {
+  // تجهيز الرد على Telegram
+  const telegramResponse = {
    method: "sendMessage",
    chat_id: callbackQuery.message.chat.id,
    text: newResponse.fulfillmentText,
+   // يجب أن نرسل payload كـ reply_markup
    reply_markup: newResponse.fulfillmentMessages[0]?.payload?.telegram?.reply_markup
   };
 
-  // 3. نستخدم الـ Batch API (غير متوفر بسهولة هنا)، لذا سنرسل رسالة الإرسال فقط
-  // وهذا هو سبب الفشل المتكرر، حيث يتوقع Telegram رداً فورياً.
-  // الحل: نرسل رسالة الإرسال (sendMessage) لتليجرام مباشرة
-  return res.json(sendMessage);
+  // إرسال الرد
+  return res.json(telegramResponse);
  }
 
  // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
