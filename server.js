@@ -12,8 +12,27 @@ app.use(express.static('public'));
 // ... (في server.js) ...
 
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
-// الدالة الرئيسية لاستقبال طلبات Dialogflow
 app.post('/', (req, res) => {
+ const callbackQuery = req.body.callback_query;
+ if (callbackQuery) {
+  const data = callbackQuery.data;
+
+  if (data === 'CATEGORY_QUERY-all') {
+   // إذا ضغط المستخدم على زر "عرض كل الفئات"
+   response = botLogic.getAllProductsAsButtons();
+
+  } else if (data === 'RECOMMENDATION_QUERY-3') {
+   // إذا ضغط المستخدم على زر "أرني أفضل التوصيات"
+   response = botLogic.getRecommendations();
+
+  } else {
+   // إذا كان هناك زر غير معروف، يمكننا أن نرسل رداً فارغاً
+   response = { fulfillmentText: '' };
+  }
+
+  // الرد على تليجرام يجب أن يكون خاصاً بالـ callback_query
+  return res.json(response);
+ }
  // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
  const intent = req.body.queryResult.intent.displayName;
  const parameters = req.body.queryResult.parameters;
