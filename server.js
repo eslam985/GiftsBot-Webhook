@@ -1,3 +1,7 @@
+// server.js - يجب أن تكون هذه الأسطر في بداية الملف
+require('dotenv').config();
+
+// ... (بقية استدعاءات المكتبات الأخرى، مثل express أو body-parser)
 const express = require('express');
 const bodyParser = require('body-parser');
 const botLogic = require('./logic'); // استيراد دوالك من logic.js
