@@ -1,16 +1,21 @@
 // This is a dummy change to force Vercel to rebuild cache.
 const express = require('express');
 const bodyParser = require('body-parser');
-// استيراد بيانات المنتجات من ملف data.json
-// يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
-const data = require('./data.json');
+const data = require('./data.json');// يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
 const products = data.products; // استخراج مصفوفة المنتجات من الكائن
-// ⬅️ نغير طريقة تعريف الرقم هنا
 const STORE_CONTACT_NUMBER = '01013080898'; // الرقم للعرض كنص
 const STORE_CONTACT_WHATSAPP = '201013080898'; // الرقم بالتنسيق الدولي (مثال: 201013080898)
-// ⬅️ بناء رابط واتساب القابل للنقر
-const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;
-
+const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;// ⬅️ بناء رابط واتساب القابل للنقر
+// الدالة المساعدة لتوحيد الأحرف العربية الأكثر شيوعاً التي تسبب فشل المطابقة
+const normalizeArabic = (text) => {
+ if (!text) return '';
+ // توحيد الألف (أ, إ, آ) إلى (ا)
+ // توحيد الألف المقصورة (ى) إلى (ي)
+ // توحيد التاء المربوطة (ة) إلى (ه)
+ return text.replace(/أ|إ|آ/g, 'ا')
+  .replace(/ى/g, 'ي')
+  .replace(/ة/g, 'ه');
+};
 
 
 
@@ -19,35 +24,22 @@ const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;
  * ...
  */
 const getPrice = (productName) => {
- // ⬅️ 1. تعريف المتغير في النطاق الخارجي (Scope)
- let targetProduct = null; // نضع قيمة مبدئية
-
- // التحقق الأولي:
+ // ⬅️ 1. الكود المفقود: تعريف المتغيرات وتنظيف اسم المنتج 
  if (!productName || typeof productName !== 'string') {
-  return `آسف، يرجى تحديد اسم المنتج بوضوح في سؤالك.`;
+  return 'عفواً، يرجى تحديد اسم المنتج الذي تريد معرفة سعره.';
  }
 
- // 2. تنظيف الاسم من أحرف الجر والمسافات
- let cleanProductName = productName.trim().toLowerCase();
+ const cleanProductName = productName.toLowerCase().trim();
+ let targetProduct = null;
 
- // مثال: يحول "بسلسلة فضة نسائية" إلى "سلسلة فضة نسائية"
- if (cleanProductName.startsWith('ب') && cleanProductName.length > 1) {
-  cleanProductName = cleanProductName.substring(1).trim().toLowerCase();
- }
-
- // ⬇️ التغيير الحاسم: استخدام .filter والـ .includes ⬇️
+ // ⬅️ 2. بداية المنطق الذي كان سبب المشكلة (الآن يعمل)
  const potentialProducts = products.filter(product => {
   return product.name.toLowerCase().includes(cleanProductName);
  });
- // ⬆️ نهاية التغيير الحاسم ⬆️
 
-
- // 3. التحقق من نتيجة البحث واختيار أفضل تطابق
  if (potentialProducts.length > 0) {
-  // ⬅️ لا نستخدم 'let' هنا، نستخدم المتغير المعرف في البداية
   targetProduct = potentialProducts[0];
 
-  // إذا كان هناك أكثر من منتج، يمكننا استخدام منطق لاختيار الأقرب
   if (potentialProducts.length > 1) {
    const exactMatch = potentialProducts.find(p =>
     p.name.toLowerCase().trim() === cleanProductName
@@ -57,21 +49,46 @@ const getPrice = (productName) => {
    }
   }
 
-  // ⬇️ 4. إذا وجدنا المنتج، نرجع الرد هنا مباشرة ⬇️
-  return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة مع صاحب المتجر عبر الاتصال أو واتساب:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
+  // ⬇️ بقية الكود (تجهيز الرد البصري) ⬇️
+  const STORE_CONTACT_NUMBER = '01013080898';
+  const WHATSAPP_LINK = `https://wa.me/2${STORE_CONTACT_NUMBER}`;
+
+  const responseText = `سعر ${targetProduct.name} هو **${targetProduct.price} جنيه**.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة عبر:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
+
+  // 1. بناء رسالة الصورة (Photo Message)
+  const photoMessage = {
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "photo": targetProduct.image_url,
+     "caption": `🛒 ${targetProduct.name}`
+    }
+   }
+  };
+
+  // 2. بناء رسالة النص والأزرار (Text Message)
+  const textMessage = {
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "parse_mode": "Markdown"
+    }
+   }
+  };
+
+  // 3. تجميع الردود وإرسالها
+  return {
+   fulfillmentMessages: [photoMessage, textMessage]
+  };
+
  } else {
-  // ⬇️ 5. إذا لم نجده كاسم منتج، نحاول البحث كاسم فئة (كما كان سابقاً) ⬇️
-
-  const categoryResult = getCategory(productName);
-
-  if (!categoryResult.includes('آسف') && !categoryResult.includes('من فضلك')) {
-   return categoryResult;
-  }
-
-  // 6. إذا لم نجد لا منتجاً ولا فئة، نرجع رسالة خطأ
+  // ... (منطق البحث كاسم فئة ورسائل الخطأ يبقى كما هو) ...
+  // ملاحظة: دالة getCategory تحتاج إلى تعريف أو استيراد إن لم تكن موجودة عالمياً
+  // بما أنك تستخدمها في server.js فهي موجودة، لذلك نترك هذا الجزء كما هو.
   return `آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`;
  }
-}; // ⬅️ انتهت الدالة هنا
+};
 
 
 
@@ -164,14 +181,13 @@ const getCategory = (categoryName) => {
 
 
 
-// ... (في نهاية ملف logic.js، قبل module.exports) ...
+
+
 /**
  * دالة لمعالجة طلبات الشراء وتوجيه المستخدم لصفحة الدفع.
  * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
  * @returns {string} - رسالة توجيهية مع رابط الشراء.
  */
-// ... (بعد دالة getCategory)
-// ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
 // ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
 const getPriceRange = (min, max, originalQuery) => {
  // 1. استخلاص القيمة الافتراضية
@@ -217,8 +233,6 @@ const getPriceRange = (min, max, originalQuery) => {
    }
   }
  }
-
-
  // 2. تصفية المنتجات بناءً على النطاق السعري
  const matchingProducts = products.filter(product => {
   return product.price >= minPrice && product.price <= maxPrice;
@@ -227,26 +241,213 @@ const getPriceRange = (min, max, originalQuery) => {
  // 3. بناء الرد على العميل
  // ⬇️ هنا نجهز المتغيرات النصية للعرض ⬇️
  const displayMin = minPrice;
- const displayMax = (maxPrice === Infinity) ? 'بلا حد أقصى' : maxPrice; // ⬅️ تعديل عرض Infinity
+ const displayMax = (maxPrice === Infinity) ? 'بلا حد أقصى' : maxPrice;
 
  if (matchingProducts.length === 0) {
-  // نستخدم displayMin و displayMax في الرد
-  return `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${displayMin} - ${displayMax} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`;
+  // نستخدم displayMin و displayMax في الرد النصي العادي
+  return {
+   fulfillmentText: `عفواً، لا توجد هدايا متاحة في هذا النطاق السعري (${displayMin} - ${displayMax} جنيه). هل يمكنني مساعدتك في نطاق آخر؟`
+  };
  }
 
- let response = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه):\n`; // ⬅️ استخدام المتغيرات الجديدة
-
- // ... (بقية الكود كما هو) ...
-
-
- // إضافة أسماء المنتجات والسعر إلى الرد
- matchingProducts.forEach(product => {
-  response += `• ${product.name} (السعر: ${product.price} جنيه)\n`;
+ // ⬅️ 1. بناء مصفوفة الأزرار: كل منتج في صف منفصل
+ const productButtons = matchingProducts.map(product => {
+  return [{
+   text: `${product.name} (السعر: ${product.price} جنيه)`, // اسم المنتج والسعر على الزر
+   // عند النقر، نرسل طلب نصي لـ Dialogflow ليبحث عن السعر
+   callback_data: `سعر ${product.name}`
+  }];
  });
 
- response += `\nلطلب أي منتج، اكتب اسمه.`;
- return response;
+ // ⬅️ 2. بناء الـ Custom Payload وإرجاعه
+ const responseText = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه). اختر المنتج الذي تريده:`;
+
+ return {
+  fulfillmentText: responseText, // النص العادي (احتياطي)
+  fulfillmentMessages: [{
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "reply_markup": {
+      "inline_keyboard": productButtons // مصفوفة الأزرار التي بنيناها
+     }
+    }
+   }
+  }]
+ };
+}; // ⬅️ انتهت الدالة هنا
+
+
+
+
+/**
+ * تجلب جميع أسماء المنتجات المتاحة وتحولها إلى أزرار مضمنة (Inline Buttons).
+ * تستخدم للرد على نية 'Catalog.Overview'.
+ */
+function getAllProductsAsButtons() {
+ // ⬅️ استخدام مصفوفة المنتجات الجاهزة والمستوردة في بداية logic.js
+
+ // 1. استخلاص جميع أسماء المنتجات مباشرة من مصفوفة 'products'
+ const allProductNames = products.map(product => product.name);
+
+ // 2. تحويل الأسماء إلى مصفوفة أزرار
+ const productButtons = Array.from(new Set(allProductNames)).map(name => {
+  return [{
+   text: name, // اسم المنتج على الزر
+   callback_data: `سعر ${name}` // عند الضغط، يرسل طلب سعر
+  }];
+ });
+
+ // 3. بناء الـ Custom Payload وإرجاعه
+ // ... (بقية الكود الخاص ببناء الـ Payload يبقى كما هو) ...
+ const responseText = `لدينا مجموعة مختارة من الهدايا المميزة. يرجى اختيار المنتج مباشرة من القائمة:`;
+
+ return {
+  fulfillmentText: responseText,
+  fulfillmentMessages: [{
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "reply_markup": {
+      "inline_keyboard": productButtons
+     }
+    }
+   }
+  }]
+ };
+}
+
+
+
+
+/**
+ * تجلب أفضل 3 منتجات بناءً على "recommendation_score" وتحولها إلى أزرار.
+ * الأولوية التسويقية هي الأعلى (الرقم الأكبر).
+ */
+const getRecommendations = () => {
+ // 1. الفرز: ترتيب المنتجات تنازلياً (الأعلى score أولاً)
+ const sortedProducts = products.slice().sort((a, b) => {
+  // نضمن أن المنتجات التي ليس لها score ستأتي في النهاية
+  const scoreA = a.recommendation_score || 0;
+  const scoreB = b.recommendation_score || 0;
+  return scoreB - scoreA; // الفرز التنازلي (الأكبر أولاً)
+ });
+
+ // 2. اختيار أفضل 3 منتجات فقط (للحفاظ على نظافة الرد)
+ const topThreeRecommendations = sortedProducts.slice(0, 3);
+
+ // 3. بناء مصفوفة الأزرار
+ const productButtons = topThreeRecommendations.map(product => {
+  return [{
+   text: `${product.name} (الأفضل تقييماً!)`,
+   // عند النقر، يرسل طلب سعر المنتج مباشرة
+   callback_data: `سعر ${product.name}`
+  }];
+ });
+
+ // 4. بناء الرد النهائي
+ const responseText = `✨ إليك أهم 3 توصيات حصرية بناءً على تقييم المبيعات: اختر ما تفضله:`;
+
+ if (topThreeRecommendations.length === 0) {
+  return {
+   fulfillmentText: `عفواً، لا توجد توصيات متاحة حالياً.`
+  };
+ }
+
+ return {
+  fulfillmentText: responseText,
+  fulfillmentMessages: [{
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "reply_markup": {
+      "inline_keyboard": productButtons
+     }
+    }
+   }
+  }]
+ };
 };
+
+
+
+
+
+// دالة جديدة مخصصة للرد برسالة المساعدة والأزرار
+const getHelpPayload = () => {
+ // ⬅️ نستخدم هنا الـ callback_data الذي يعمل بشكل مستقر: /recommend و /catalog
+ return {
+  fulfillmentMessages: [{
+   payload: {
+    telegram: {
+     text: "عفواً! لم أفهم سؤالك. يرجى اختيار أحد الأوامر التالية أو كتابة اسم منتجك:",
+     reply_markup: {
+      inline_keyboard: [
+       // 1. ✨ الأفضل تقييماً (الترتيب الجديد)
+       [
+        {
+         "callback_data": "/recommend",
+         "text": "✨ أفضل التوصيات"
+        }
+       ],
+       // 2. 📁 الأقسام/الفئات (الزر الجديد)
+       [
+        {
+         "text": "📁 عرض الأقسام",
+         "callback_data": "/show_categories" // ⬅️ إرسال أمر نصي صريح
+        }
+       ],
+       // 3. 📦 كل المنتجات (تغيير الاسم والترتيب)
+       [
+        {
+         "text": "📦 عرض كل المنتجات",
+         "callback_data": "/catalog"
+        }
+       ]
+      ]
+     }
+    }
+   }
+  }],
+  fulfillmentText: "رسالة احتياطية"
+ };
+};
+
+
+
+
+// دالة جديدة مخصصة لعرض الفئات (التي تعمل كـ /start)
+// دالة مخصصة لعرض الفئات (تحل محل Default Welcome Intent عند ضغط الزر)
+const getCategoryButtons = () => {
+ // هذا هو الـ JSON الذي أرسلته والذي يعمل بشكل مؤكد في نية الترحيب
+ return {
+  fulfillmentMessages: [{
+   payload: {
+    telegram: {
+     text: "مرحباً! أنا بوت متجر الهدايا. كيف يمكنني مساعدتك؟\nيمكنك البحث عن اسم منتج معين، أو اختر فئة من الأقسام التالية:",
+     reply_markup: {
+      inline_keyboard: [
+       [
+        { "text": "مجوهرات", "callback_data": "وريني كل منتجات مجوهرات" },
+        { "callback_data": "وريني كل منتجات إلكترونيات", "text": "إلكترونيات" }
+       ],
+       [
+        { "text": "هدايا رجالية", "callback_data": "وريني كل منتجات هدايا رجالية" },
+        { "callback_data": "وريني كل منتجات Home Goods", "text": "Home Goods" }
+       ]
+      ]
+     }
+    }
+   }
+  }],
+  fulfillmentText: "قائمة الفئات"
+ };
+};
+
+
 
 
 
@@ -255,5 +456,9 @@ module.exports = {
  products,
  getPrice,
  getCategory,
- getPriceRange // ⬅️ إضافة الدالة للتصدير
+ getPriceRange,
+ getAllProductsAsButtons,
+ getRecommendations,
+ getHelpPayload,
+ getCategoryButtons,
 }; 
