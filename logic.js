@@ -385,7 +385,7 @@ const getHelpPayload = () => {
   fulfillmentMessages: [{
    payload: {
     telegram: {
-     text: "عفواً! لم أفهم سؤالك. يرجى اختيار أحد الأوامر التالية أو كتابة اسم منتجك:",
+     text: "من فضلك يرجى اختيار أحد الأوامر التالية أو كتابة اسم منتجك:",
      reply_markup: {
       inline_keyboard: [
        // 1. ✨ الأفضل تقييماً (الترتيب الجديد)
