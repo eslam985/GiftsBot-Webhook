@@ -19,31 +19,32 @@ app.post('/', (req, res) => {
   const data = callbackQuery.data;
   let newResponse;
 
-  // ⬅️ معالجة الأزرار الثلاثة مباشرة
+  // 1. تحديد الرد المطلوب بناءً على قيمة الزر
   if (data === '/catalog') {
    newResponse = botLogic.getAllProductsAsButtons();
   } else if (data === '/recommend') {
    newResponse = botLogic.getRecommendations();
   } else if (data === 'SHOW_CATEGORIES') {
-   newResponse = botLogic.getCategoryButtons(); // ⬅️ الدالة الجديدة
+   newResponse = botLogic.getCategoryButtons(); // ⬅️ الحل الأخير لزر الأقسام
   } else {
-   // إذا كان أي زر آخر (مثل أزرار الفئات)، دع Dialogflow يعالجه
-   // لكن أرسل رداً فورياً لإغلاق الـ Callback
+   // إذا كان زرًا آخر (مثل أزرار الفئات) أو زر غير معروف، تجاهله وأغلق الـ callback
    return res.json({});
   }
 
-  // تجهيز الرد على Telegram
+  // 2. تجهيز الرد لـ Telegram (sendMessage)
   const telegramResponse = {
    method: "sendMessage",
    chat_id: callbackQuery.message.chat.id,
    text: newResponse.fulfillmentText,
-   // يجب أن نرسل payload كـ reply_markup
+   // استخراج الـ reply_markup من الـ payload
    reply_markup: newResponse.fulfillmentMessages[0]?.payload?.telegram?.reply_markup
   };
 
-  // إرسال الرد
+  // 3. إرسال الرد
   return res.json(telegramResponse);
  }
+
+
 
  // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
  const intent = req.body.queryResult.intent.displayName;
