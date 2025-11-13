@@ -52,6 +52,11 @@ app.post('/', (req, res) => {
   // ⬅️ هنا نستدعي دالة التوصيات الجديدة
   response = botLogic.getRecommendations();
 
+ } else if (intent === 'Gift.Inquiry - Category') {
+  // ⬅️ نستخدم نفس منطق CategoryQuery لعدم تكرار الكود
+  const categoryName = parameters.category_name;
+  response = botLogic.getCategory(categoryName);
+
  } else if (intent === 'CategoryQuery') {
   const categoryName = parameters.category_name;
   // ⬅️ هنا، getCategory سترجع كائناً يحتوي على fulfillmentText/fulfillmentMessages
