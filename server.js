@@ -57,6 +57,12 @@ app.post('/', (req, res) => {
   const categoryName = parameters.category_name;
   response = botLogic.getCategory(categoryName);
 
+ } else if (intent === 'Help.Inquiry') {
+  // ⬅️ إذا تم تفعيل نية المساعدة، أرسل الرد النصي الصحيح مباشرة.
+  response = {
+   fulfillmentText: 'مرحباً! أنا جاهز للإجابة عن أسعار المنتجات أو عرض فئات الهدايا. يمكنك أيضاً استخدام القائمة الجانبية لتسهيل البحث.'
+  };
+
  } else if (intent === 'CategoryQuery') {
   const categoryName = parameters.category_name;
   // ⬅️ هنا، getCategory سترجع كائناً يحتوي على fulfillmentText/fulfillmentMessages
