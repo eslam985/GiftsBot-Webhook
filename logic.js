@@ -98,14 +98,14 @@ const categoryMap = {
  * @param {string} categoryName - اسم الفئة المراد البحث عنها (قد يكون عربي أو إنجليزي).
  * @returns {string} - رسالة تحتوي على المنتجات أو رسالة خطأ.
  */
- const getCategory = (categoryName) => {
-  // ⬅️ الإضافة الفورية: التحقق من القيمة الواردة
-  if (!categoryName || typeof categoryName !== 'string') {
-   // إذا لم تكن نصًا، نرد بطلب تحديد الفئة.
-   return {
-    fulfillmentText: 'من فضلك حدد اسم الفئة التي تبحث عنها.'
-   };
-  } 
+const getCategory = (categoryName) => {
+ // ⬅️ الإضافة الفورية: التحقق من القيمة الواردة
+ if (!categoryName || typeof categoryName !== 'string') {
+  // إذا لم تكن نصًا، نرد بطلب تحديد الفئة.
+  return {
+   fulfillmentText: 'من فضلك حدد اسم الفئة التي تبحث عنها.'
+  };
+ }
 
  // 1. تنظيف القيمة من المسافات وتحويلها لحروف صغيرة
  let cleanCategoryName = categoryName.toLowerCase().trim();
@@ -359,6 +359,41 @@ const getRecommendations = () => {
 
 
 
+
+// دالة جديدة مخصصة للرد برسالة المساعدة والأزرار
+const getHelpPayload = () => {
+ return {
+  fulfillmentMessages: [{
+   payload: {
+    telegram: {
+     text: "عفواً! لم أفهم سؤالك. يرجى اختيار أحد الأوامر التالية أو كتابة اسم منتجك:",
+     reply_markup: {
+      inline_keyboard: [
+       [
+        {
+         "text": "🛒 عرض كل الفئات",
+         "callback_data": "/catalog"
+        }
+       ],
+       [
+        {
+         "callback_data": "/recommend",
+         "text": "✨ أرني أفضل التوصيات"
+        }
+       ]
+      ]
+     }
+    }
+   }
+  }],
+  fulfillmentText: "رسالة احتياطية"
+ };
+};
+
+
+
+
+
 // ... (تأكد من تصدير الدالة الجديدة)
 module.exports = {
  products,
@@ -366,5 +401,6 @@ module.exports = {
  getCategory,
  getPriceRange,
  getAllProductsAsButtons,
- getRecommendations
+ getRecommendations,
+ getHelpPayload,
 }; 

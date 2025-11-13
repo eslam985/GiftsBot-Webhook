@@ -102,12 +102,11 @@ app.post('/', (req, res) => {
 
  } else if (intent === 'CategoryQuery') {
   const categoryName = parameters.category_name;
-  // ⬅️ هنا، getCategory سترجع كائناً يحتوي على fulfillmentText/fulfillmentMessages
   response = botLogic.getCategory(categoryName);
 
  } else {
-  // نية غير معروفة (Default Fallback)
-  response.fulfillmentText = 'عفواً، لم أفهم سؤالك. يرجى سؤالي عن سعر منتج أو فئة معينة.';
+  // ⬅️ نية غير معروفة (Default Fallback): نستخدم الدالة الجديدة
+  response = botLogic.getHelpPayload();
  }
 
  // 3. إرسال الرد مرة أخرى إلى Dialogflow
