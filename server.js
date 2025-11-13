@@ -96,9 +96,9 @@ app.post('/', (req, res) => {
 
  } else if (intent === 'CategoryQuery') {
   // ...
- } else if (intent === 'SHOW_CATEGORIES') {
+ } else if (intent === 'SHOW_CATEGORIES') { // ⬅️⬅️ هذا السطر يجب حذفه
   // ⬅️ الإضافة الجديدة: معالجة أمر الأقسام المخصص
-  response = botLogic.getCategoryButtons();
+  response = botLogic.getCategoryButtons(); // ⬅️⬅️ هذا يجب حذفه
  } else {
   // ⬅️ نية غير معروفة (Default Fallback):
   response = botLogic.getHelpPayload();
