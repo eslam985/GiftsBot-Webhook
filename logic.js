@@ -130,8 +130,9 @@ const getCategory = (categoryName) => {
 
  // 3. تصفية المنتجات حسب الفئة
  const filteredProducts = products.filter(product =>
-  // نطابق الفئة المخزنة في المنتج مع الاسم الذي سنبحث به
-  product.category.toLowerCase().trim() === searchCategory
+  // 🚨 التصحيح هنا: استخدام includes() بدلاً من المطابقة الصارمة (===) 
+  // لضمان وجود الكلمة الرئيسية في اسم الفئة المخزنة.
+  product.category.toLowerCase().trim().includes(cleanCategoryName)
  );
 
  // 4. بناء الردود
