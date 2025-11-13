@@ -14,24 +14,37 @@ app.use(express.static('public'));
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
 app.post('/', (req, res) => {
  const callbackQuery = req.body.callback_query;
+
  if (callbackQuery) {
   const data = callbackQuery.data;
+  let newResponse;
 
   if (data === 'CATEGORY_QUERY-all') {
-   // إذا ضغط المستخدم على زر "عرض كل الفئات"
-   response = botLogic.getAllProductsAsButtons();
-
+   newResponse = botLogic.getAllProductsAsButtons();
   } else if (data === 'RECOMMENDATION_QUERY-3') {
-   // إذا ضغط المستخدم على زر "أرني أفضل التوصيات"
-   response = botLogic.getRecommendations();
-
+   newResponse = botLogic.getRecommendations();
   } else {
-   // إذا كان هناك زر غير معروف، يمكننا أن نرسل رداً فارغاً
-   response = { fulfillmentText: '' };
+   return res.json({}); // تجاهل أي أزرار غير معروفة
   }
 
-  // الرد على تليجرام يجب أن يكون خاصاً بالـ callback_query
-  return res.json(response);
+  // ⬅️ الإضافة الحاسمة: نرسل أوامر Telegram مباشرة عبر الكود
+  const telegramResponse = {
+   method: "answerCallbackQuery",
+   callback_query_id: callbackQuery.id,
+   // يمكن إضافة نص تنبيه هنا: text: "جاري تحميل البيانات..."
+  };
+
+  // نرسل أوامر التحرير/الإرسال الجديدة بعد إغلاق الـ callback
+  telegramResponse.method = "sendMessage";
+  telegramResponse.chat_id = callbackQuery.message.chat.id;
+  telegramResponse.text = newResponse.fulfillmentText;
+
+  // يجب أن نضيف الـ reply_markup إذا كانت موجودة
+  if (newResponse.fulfillmentMessages && newResponse.fulfillmentMessages[0].payload && newResponse.fulfillmentMessages[0].payload.telegram) {
+   telegramResponse.reply_markup = newResponse.fulfillmentMessages[0].payload.telegram.reply_markup;
+  }
+
+  return res.json(telegramResponse);
  }
  // 1. استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
  const intent = req.body.queryResult.intent.displayName;
