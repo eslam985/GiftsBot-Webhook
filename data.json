@@ -7,7 +7,7 @@
       "category": "Men's Gifts",
       "description": "محفظة جلد طبيعي فاخر عالية الجودة.",
       "recommendation_score": 10,
-      "image_url": "https://example.com/images/wallet.jpg"
+      "image_url": "https://placehold.co/400x400/3c3c3c/white/jpg"
     },
     {
       "id": 2,
@@ -16,7 +16,7 @@
       "category": "Jewelry",
       "description": "سلسلة من الفضة عيار 925 بتصميم قلادة قلب",
       "recommendation_score": 7,
-      "image_url": "https://example.com/images/necklace.jpg"
+      "image_url": "https://placehold.co/400x400/cccccc/black/jpg"
     },
     {
       "id": 3,
@@ -25,7 +25,7 @@
       "category": "Electronics",
       "description": "ساعة مقاومة للماء مع مراقبة ضربات القلب وتتبع اللياقة",
       "recommendation_score": 9,
-      "image_url": "https://example.com/images/watch.jpg"
+      "image_url": "https://placehold.co/400x400/007bff/white/jpg"
     },
     {
       "id": 4,
@@ -34,7 +34,7 @@
       "category": "Home Goods",
       "description": "طقم شاي من البورسلين لستة أشخاص",
       "recommendation_score": 5,
-      "image_url": "https://example.com/images/tea_set.jpg"
+      "image_url": "https://placehold.co/400x400/f0e68c/black/jpg"
     },
     {
       "id": 5,
@@ -43,7 +43,7 @@
       "category": "Electronics",
       "description": "كوب يحافظ على درجة حرارة المشروب لفترة طويلة",
       "recommendation_score": 8,
-      "image_url": "https://example.com/images/mug.jpg"
+      "image_url": "https://placehold.co/400x400/ff6347/white/jpg"
     }
   ]
 }

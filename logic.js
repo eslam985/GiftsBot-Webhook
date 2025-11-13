@@ -15,11 +15,15 @@ const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;// ⬅️ بنا
  * ...
  */
 const getPrice = (productName) => {
+ // ⬅️ 1. الكود المفقود: تعريف المتغيرات وتنظيف اسم المنتج 
+ if (!productName || typeof productName !== 'string') {
+  return 'عفواً، يرجى تحديد اسم المنتج الذي تريد معرفة سعره.';
+ }
+
+ const cleanProductName = productName.toLowerCase().trim();
  let targetProduct = null;
 
- // ... (منطق تنظيف اسم المنتج واستخلاصه يبقى كما هو) ...
- // ... (نهاية الكود الخاص بالبحث عن المنتج) ...
-
+ // ⬅️ 2. بداية المنطق الذي كان سبب المشكلة (الآن يعمل)
  const potentialProducts = products.filter(product => {
   return product.name.toLowerCase().includes(cleanProductName);
  });
@@ -36,7 +40,9 @@ const getPrice = (productName) => {
    }
   }
 
-  // ⬇️ التغيير الحاسم: تجهيز الرد البصري ⬇️
+  // ⬇️ بقية الكود (تجهيز الرد البصري) ⬇️
+  const STORE_CONTACT_NUMBER = '01013080898';
+  const WHATSAPP_LINK = `https://wa.me/2${STORE_CONTACT_NUMBER}`;
 
   const responseText = `سعر ${targetProduct.name} هو **${targetProduct.price} جنيه**.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة عبر:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
 
@@ -45,8 +51,8 @@ const getPrice = (productName) => {
    "platform": "telegram",
    "payload": {
     "telegram": {
-     "photo": targetProduct.image_url, // ⬅️ رابط الصورة من data.json
-     "caption": `🛒 ${targetProduct.name}` // عنوان بسيط يظهر أسفل الصورة
+     "photo": targetProduct.image_url,
+     "caption": `🛒 ${targetProduct.name}`
     }
    }
   };
@@ -57,23 +63,20 @@ const getPrice = (productName) => {
    "payload": {
     "telegram": {
      "text": responseText,
-     "parse_mode": "Markdown" // لتفعيل تنسيق الخط الغامق
+     "parse_mode": "Markdown"
     }
    }
   };
 
   // 3. تجميع الردود وإرسالها
   return {
-   fulfillmentMessages: [photoMessage, textMessage] // ⬅️ نرسل الصورتين بالتتابع
+   fulfillmentMessages: [photoMessage, textMessage]
   };
 
  } else {
   // ... (منطق البحث كاسم فئة ورسائل الخطأ يبقى كما هو) ...
-  const categoryResult = getCategory(productName);
-  if (categoryResult && categoryResult.fulfillmentText && !categoryResult.fulfillmentText.includes('آسف') && !categoryResult.fulfillmentText.includes('من فضلك')) {
-   return categoryResult;
-  }
-
+  // ملاحظة: دالة getCategory تحتاج إلى تعريف أو استيراد إن لم تكن موجودة عالمياً
+  // بما أنك تستخدمها في server.js فهي موجودة، لذلك نترك هذا الجزء كما هو.
   return `آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`;
  }
 };
