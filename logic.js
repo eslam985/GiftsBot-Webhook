@@ -6,7 +6,16 @@ const products = data.products; // استخراج مصفوفة المنتجات 
 const STORE_CONTACT_NUMBER = '01013080898'; // الرقم للعرض كنص
 const STORE_CONTACT_WHATSAPP = '201013080898'; // الرقم بالتنسيق الدولي (مثال: 201013080898)
 const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;// ⬅️ بناء رابط واتساب القابل للنقر
-
+// الدالة المساعدة لتوحيد الأحرف العربية الأكثر شيوعاً التي تسبب فشل المطابقة
+const normalizeArabic = (text) => {
+ if (!text) return '';
+ // توحيد الألف (أ, إ, آ) إلى (ا)
+ // توحيد الألف المقصورة (ى) إلى (ي)
+ // توحيد التاء المربوطة (ة) إلى (ه)
+ return text.replace(/أ|إ|آ/g, 'ا')
+  .replace(/ى/g, 'ي')
+  .replace(/ة/g, 'ه');
+};
 
 
 
@@ -113,26 +122,20 @@ const getCategory = (categoryName) => {
 
  // 2. تنظيف ومطابقة اسم الفئة
 
- // تنظيف القيمة من المسافات وتحويلها لحروف صغيرة
- let cleanCategoryName = categoryName.toLowerCase().trim();
+ // توحيد وتنظيف الإدخال أولاً (باستخدام الدالة الجديدة)
+ let cleanCategoryName = normalizeArabic(categoryName.toLowerCase().trim());
 
- // إزالة "الـ" من بداية الكلمة (لتحسين دقة المطابقة)
+ // إزالة "الـ" من بداية الكلمة 
  if (cleanCategoryName.startsWith('ال') && cleanCategoryName.length > 2) {
   cleanCategoryName = cleanCategoryName.substring(2).trim();
  }
 
- // محاولة ترجمة الاسم العربي إلى نظيره المستخدم في مصفوفة المنتجات (CategoryMap)
- // (يجب أن يتم تعريف categoryMap في الملف)
- let searchCategory = categoryMap[cleanCategoryName] || categoryName;
+ // **ملاحظة:** تم إزالة استخدام categoryMap هنا لأننا سنعتمد على اسم الفئة العربي الموحد للبحث.
 
- // توحيد الاسم الذي سنبحث به (سواء كان 'هدايا رجالية' أو 'Mens_Gifts')
- searchCategory = searchCategory.toLowerCase().trim();
-
- // 5. تصفية المنتجات حسب الفئة
+ // 3. تصفية المنتجات حسب الفئة
  const filteredProducts = products.filter(product =>
-  // 🚨 التصحيح هنا: نستخدم المتغير العربي النظيف cleanCategoryName للفلترة
-  product.category.toLowerCase().trim().includes(cleanCategoryName)
-  // ملاحظة: نستخدم includes() بدلاً من المطابقة الصارمة لضمان عمل الفلترة
+  // 🚨 توحيد النص المخزن في قاعدة البيانات قبل المطابقة، واستخدام includes()
+  normalizeArabic(product.category.toLowerCase().trim()).includes(cleanCategoryName)
  );
 
  // 4. بناء الردود
@@ -140,8 +143,7 @@ const getCategory = (categoryName) => {
   // أ. بناء مصفوفة الأزرار: كل منتج في صف منفصل
   const productButtons = filteredProducts.map(product => {
    return [{
-    text: `${product.name} (السعر: ${product.price} جنيه)`, // اسم المنتج والسعر على الزر
-    // عند النقر، نرسل طلب نصي بسيط لـ Dialogflow ليبحث عن السعر مباشرة
+    text: `${product.name} (السعر: ${product.price} جنيه)`,
     callback_data: `سعر ${product.name}`
    }];
   });
@@ -155,7 +157,7 @@ const getCategory = (categoryName) => {
      "telegram": {
       "text": `🛒 المنتجات المتاحة في فئة "${categoryName}". اختر المنتج الذي تريده:`,
       "reply_markup": {
-       "inline_keyboard": productButtons // مصفوفة الأزرار التي بنيناها
+       "inline_keyboard": productButtons
       }
      }
     }
