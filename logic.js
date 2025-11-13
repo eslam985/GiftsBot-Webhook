@@ -99,8 +99,12 @@ const categoryMap = {
  * @returns {string} - رسالة تحتوي على المنتجات أو رسالة خطأ.
  */
 const getCategory = (categoryName) => {
- if (!categoryName) {
-  return { fulfillmentText: "من فضلك حدد اسم الفئة التي تبحث عنها." };
+ // ⬅️ الإضافة الفورية: التحقق من القيمة الواردة
+ if (!categoryName || typeof categoryName !== 'string') {
+  // إذا لم تكن نصًا، نرد بطلب تحديد الفئة.
+  return {
+   fulfillmentText: 'من فضلك حدد اسم الفئة التي تبحث عنها.'
+  };
  }
 
  // 1. تنظيف القيمة من المسافات وتحويلها لحروف صغيرة
