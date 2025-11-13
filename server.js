@@ -31,8 +31,8 @@ app.post('/', (req, res) => {
    productName = productName[0];
   }
 
-  // ⬅️ إرسال اسم المنتج النظيف لدالة getPrice
-  response.fulfillmentText = botLogic.getPrice(productName);
+  // ⬅️ استبدال كائن الرد بالكامل بالكائن العائد من دالة getPrice
+  response = botLogic.getPrice(productName);
 
  } else if (intent === 'Product.PriceRange') {
 

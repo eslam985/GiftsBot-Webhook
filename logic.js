@@ -15,35 +15,18 @@ const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;// ⬅️ بنا
  * ...
  */
 const getPrice = (productName) => {
- // ⬅️ 1. تعريف المتغير في النطاق الخارجي (Scope)
- let targetProduct = null; // نضع قيمة مبدئية
+ let targetProduct = null;
 
- // التحقق الأولي:
- if (!productName || typeof productName !== 'string') {
-  return `آسف، يرجى تحديد اسم المنتج بوضوح في سؤالك.`;
- }
+ // ... (منطق تنظيف اسم المنتج واستخلاصه يبقى كما هو) ...
+ // ... (نهاية الكود الخاص بالبحث عن المنتج) ...
 
- // 2. تنظيف الاسم من أحرف الجر والمسافات
- let cleanProductName = productName.trim().toLowerCase();
-
- // مثال: يحول "بسلسلة فضة نسائية" إلى "سلسلة فضة نسائية"
- if (cleanProductName.startsWith('ب') && cleanProductName.length > 1) {
-  cleanProductName = cleanProductName.substring(1).trim().toLowerCase();
- }
-
- // ⬇️ التغيير الحاسم: استخدام .filter والـ .includes ⬇️
  const potentialProducts = products.filter(product => {
   return product.name.toLowerCase().includes(cleanProductName);
  });
- // ⬆️ نهاية التغيير الحاسم ⬆️
 
-
- // 3. التحقق من نتيجة البحث واختيار أفضل تطابق
  if (potentialProducts.length > 0) {
-  // ⬅️ لا نستخدم 'let' هنا، نستخدم المتغير المعرف في البداية
   targetProduct = potentialProducts[0];
 
-  // إذا كان هناك أكثر من منتج، يمكننا استخدام منطق لاختيار الأقرب
   if (potentialProducts.length > 1) {
    const exactMatch = potentialProducts.find(p =>
     p.name.toLowerCase().trim() === cleanProductName
@@ -53,21 +36,47 @@ const getPrice = (productName) => {
    }
   }
 
-  // ⬇️ 4. إذا وجدنا المنتج، نرجع الرد هنا مباشرة ⬇️
-  return `سعر ${targetProduct.name} هو ${targetProduct.price} جنيه.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة مع صاحب المتجر عبر الاتصال أو واتساب:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
+  // ⬇️ التغيير الحاسم: تجهيز الرد البصري ⬇️
+
+  const responseText = `سعر ${targetProduct.name} هو **${targetProduct.price} جنيه**.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة عبر:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
+
+  // 1. بناء رسالة الصورة (Photo Message)
+  const photoMessage = {
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "photo": targetProduct.image_url, // ⬅️ رابط الصورة من data.json
+     "caption": `🛒 ${targetProduct.name}` // عنوان بسيط يظهر أسفل الصورة
+    }
+   }
+  };
+
+  // 2. بناء رسالة النص والأزرار (Text Message)
+  const textMessage = {
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "parse_mode": "Markdown" // لتفعيل تنسيق الخط الغامق
+    }
+   }
+  };
+
+  // 3. تجميع الردود وإرسالها
+  return {
+   fulfillmentMessages: [photoMessage, textMessage] // ⬅️ نرسل الصورتين بالتتابع
+  };
+
  } else {
-  // ⬇️ 5. إذا لم نجده كاسم منتج، نحاول البحث كاسم فئة (كما كان سابقاً) ⬇️
-
+  // ... (منطق البحث كاسم فئة ورسائل الخطأ يبقى كما هو) ...
   const categoryResult = getCategory(productName);
-
-  if (!categoryResult.includes('آسف') && !categoryResult.includes('من فضلك')) {
+  if (categoryResult && categoryResult.fulfillmentText && !categoryResult.fulfillmentText.includes('آسف') && !categoryResult.fulfillmentText.includes('من فضلك')) {
    return categoryResult;
   }
 
-  // 6. إذا لم نجد لا منتجاً ولا فئة، نرجع رسالة خطأ
   return `آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`;
  }
-}; // ⬅️ انتهت الدالة هنا
+};
 
 
 
