@@ -45,11 +45,14 @@ app.post('/', (req, res) => {
   response = botLogic.getPriceRange(price_min, price_max, originalQuery);
 
  } else if (intent === 'Catalog.Overview') {
-  // ⬅️ هنا سنستدعي الدالة الجديدة
+  // ⬅️ هنا نستدعي دالة عرض الكتالوج بالكامل
   response = botLogic.getAllProductsAsButtons();
 
- } else if (intent === 'CategoryQuery') {
+ } else if (intent === 'Product.Recommendation') {
+  // ⬅️ هنا نستدعي دالة التوصيات الجديدة
+  response = botLogic.getRecommendations();
 
+ } else if (intent === 'CategoryQuery') {
   const categoryName = parameters.category_name;
   // ⬅️ هنا، getCategory سترجع كائناً يحتوي على fulfillmentText/fulfillmentMessages
   response = botLogic.getCategory(categoryName);

@@ -1,15 +1,11 @@
 // This is a dummy change to force Vercel to rebuild cache.
 const express = require('express');
 const bodyParser = require('body-parser');
-// استيراد بيانات المنتجات من ملف data.json
-// يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
-const data = require('./data.json');
+const data = require('./data.json');// يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
 const products = data.products; // استخراج مصفوفة المنتجات من الكائن
-// ⬅️ نغير طريقة تعريف الرقم هنا
 const STORE_CONTACT_NUMBER = '01013080898'; // الرقم للعرض كنص
 const STORE_CONTACT_WHATSAPP = '201013080898'; // الرقم بالتنسيق الدولي (مثال: 201013080898)
-// ⬅️ بناء رابط واتساب القابل للنقر
-const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;
+const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;// ⬅️ بناء رابط واتساب القابل للنقر
 
 
 
@@ -85,21 +81,10 @@ const categoryMap = {
  'home goods': 'Home Goods',
  'مستلزمات منزلية': 'Home Goods', // ⬅️ تأكد من إضافة هذا السطر
 };
-
-
-
 /**
  * دالة للحصول على قائمة بالمنتجات في فئة معينة.
  * @param {string} categoryName - اسم الفئة المراد البحث عنها (قد يكون عربي أو إنجليزي).
  * @returns {string} - رسالة تحتوي على المنتجات أو رسالة خطأ.
- */
-/**
- * دالة للحصول على قائمة بالمنتجات في فئة معينة، تم تعديلها لإرجاع Custom Payload
- * يحتوي على أزرار مضمنة (Inline Buttons) في تليجرام.
- */
-/**
- * دالة للحصول على قائمة بالمنتجات في فئة معينة، تم تعديلها لإرجاع Custom Payload
- * يحتوي على أزرار مضمنة (Inline Buttons) في تليجرام.
  */
 const getCategory = (categoryName) => {
  if (!categoryName) {
@@ -164,14 +149,13 @@ const getCategory = (categoryName) => {
 
 
 
-// ... (في نهاية ملف logic.js، قبل module.exports) ...
+
+
 /**
  * دالة لمعالجة طلبات الشراء وتوجيه المستخدم لصفحة الدفع.
  * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
  * @returns {string} - رسالة توجيهية مع رابط الشراء.
  */
-// ... (بعد دالة getCategory)
-// ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
 // ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
 const getPriceRange = (min, max, originalQuery) => {
  // 1. استخلاص القيمة الافتراضية
@@ -217,8 +201,6 @@ const getPriceRange = (min, max, originalQuery) => {
    }
   }
  }
-
-
  // 2. تصفية المنتجات بناءً على النطاق السعري
  const matchingProducts = products.filter(product => {
   return product.price >= minPrice && product.price <= maxPrice;
@@ -262,8 +244,8 @@ const getPriceRange = (min, max, originalQuery) => {
    }
   }]
  };
-
 }; // ⬅️ انتهت الدالة هنا
+
 
 
 
@@ -306,11 +288,67 @@ function getAllProductsAsButtons() {
 }
 
 
+
+
+/**
+ * تجلب أفضل 3 منتجات بناءً على "recommendation_score" وتحولها إلى أزرار.
+ * الأولوية التسويقية هي الأعلى (الرقم الأكبر).
+ */
+const getRecommendations = () => {
+ // 1. الفرز: ترتيب المنتجات تنازلياً (الأعلى score أولاً)
+ const sortedProducts = products.slice().sort((a, b) => {
+  // نضمن أن المنتجات التي ليس لها score ستأتي في النهاية
+  const scoreA = a.recommendation_score || 0;
+  const scoreB = b.recommendation_score || 0;
+  return scoreB - scoreA; // الفرز التنازلي (الأكبر أولاً)
+ });
+
+ // 2. اختيار أفضل 3 منتجات فقط (للحفاظ على نظافة الرد)
+ const topThreeRecommendations = sortedProducts.slice(0, 3);
+
+ // 3. بناء مصفوفة الأزرار
+ const productButtons = topThreeRecommendations.map(product => {
+  return [{
+   text: `${product.name} (الأفضل تقييماً!)`,
+   // عند النقر، يرسل طلب سعر المنتج مباشرة
+   callback_data: `سعر ${product.name}`
+  }];
+ });
+
+ // 4. بناء الرد النهائي
+ const responseText = `✨ إليك أهم 3 توصيات حصرية بناءً على تقييم المبيعات: اختر ما تفضله:`;
+
+ if (topThreeRecommendations.length === 0) {
+  return {
+   fulfillmentText: `عفواً، لا توجد توصيات متاحة حالياً.`
+  };
+ }
+
+ return {
+  fulfillmentText: responseText,
+  fulfillmentMessages: [{
+   "platform": "telegram",
+   "payload": {
+    "telegram": {
+     "text": responseText,
+     "reply_markup": {
+      "inline_keyboard": productButtons
+     }
+    }
+   }
+  }]
+ };
+};
+
+
+
+
 // ... (تأكد من تصدير الدالة الجديدة)
 module.exports = {
  products,
  getPrice,
  getCategory,
- getPriceRange, // ⬅️ إضافة الدالة للتصدير
- getAllProductsAsButtons // ⬅️ إضافة الدالة للتصدير
+ getPriceRange,
+ getAllProductsAsButtons,
+ getRecommendations
 }; 
