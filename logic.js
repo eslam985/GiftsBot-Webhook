@@ -33,32 +33,6 @@ exports.normalizeArabic = (text) => {
 // 1. دالة إرسال الرسالة إلى Dialogflow (مطلوبة لـ Messenger)
 // **********************************************************************************
 
-// sender_psid هنا هو معرف الجلسة لـ Dialogflow
-exports.sendToDialogflow = async (sender_psid, message) => {
-  const sessionId = sender_psid;
-  const sessionPath = sessionClient.projectAgentSessionPath(projectId, sessionId);
-
-  // بناء طلب Dialogflow
-  const request = {
-    session: sessionPath,
-    queryInput: {
-      text: {
-        text: message,
-        languageCode: 'ar',
-      },
-    },
-  };
-
-  try {
-    const responses = await sessionClient.detectIntent(request);
-    return responses[0].queryResult;
-  } catch (error) {
-    console.error('ERROR during detectIntent:', error);
-    throw error;
-  }
-};
-
-
 /**
  * دالة للحصول على سعر ووصف منتج معين بناءً على اسمه.
  * تم تصديرها: exports.getPrice
