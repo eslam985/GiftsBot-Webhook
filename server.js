@@ -1,71 +1,83 @@
-// هذا خادم Node.js بسيط يعمل كوسيط لاستقبال رسائل Meta ثم إرسالها إلى Dialogflow.
-// هذا الحل يتجاوز الحاجة إلى استخدام تكامل Dialogflow المدمج الذي فرض عليك التحقق من النشاط التجاري.
+// هذا خادم Node.js يعمل كوسيط لاستقبال رسائل Meta ثم إرسالها إلى Dialogflow.
+// هذا الكود يتطلب أن تكون قيمة مفتاح حساب الخدمة (Service Account Key JSON) 
+// موجودة كمتغير بيئة سري باسم GCP_CREDENTIALS في إعدادات Vercel.
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const axios = require('axios'); // مطلوب لإرسال الرسائل إلى Dialogflow و Meta
+const axios = require('axios'); 
+const dialogflow = require('@google-cloud/dialogflow');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ***************************************************************
-// 1. المتغيرات السرية (يجب تعبئتها من قبلك)
+// 1. المتغيرات السرية (تم تعبئتها بناءً على إدخالك السابق)
 // ***************************************************************
-
-// الرمز الذي أدخلته في إعدادات Webhook الخاص بـ Meta للتحقق
 const VERIFY_TOKEN = 'verifyBot'; 
-
-// رمز الصفحة (Page Access Token) الذي حصلت عليه من Graph API Explorer
 const PAGE_ACCESS_TOKEN = 'EAAWflOct5CABPzylk0rwBjK337RZBYreX5mvtb2tYm8dFZCYU1IbMlDGzqMLwuibxQ4JStSOiitzI1lZCWZAIL9a2sI8WLc99edpDok1lhq5JKGuZAn3vXvjUHncdzkuwNcBgkpe2IGKJmSJui0BQfQqsSz1cmFDykHxQHWTdzRe7ZCkGD1rNp65K0ZAI8PvnJUsbyPwgZDZD'; 
-
-// ID الخاص بوكيل Dialogflow (يمكنك الحصول عليه من إعدادات الوكيل)
 const DIALOGFLOW_PROJECT_ID = 'giftsbot-nhop'; 
 
 // ***************************************************************
-// 2. إعداد الخادم
+// 2. إعداد Dialogflow Client 
+// ***************************************************************
+// المصادقة تتم عبر متغير البيئة السري GCP_CREDENTIALS
+const keyFileContent = process.env.GCP_CREDENTIALS;
+if (!keyFileContent) {
+    console.error("CRITICAL ERROR: GCP_CREDENTIALS environment variable is missing in Vercel. Bot will not respond correctly.");
+}
+
+let credentials = {};
+try {
+    if (keyFileContent) {
+        credentials = JSON.parse(keyFileContent);
+    }
+} catch (e) {
+    console.error("ERROR: Failed to parse GCP_CREDENTIALS environment variable as JSON.", e);
+}
+
+const sessionClient = new dialogflow.SessionsClient({ credentials });
+
+// ***************************************************************
+// 3. إعداد الخادم
 // ***************************************************************
 
 app.use(bodyParser.json());
 
 // ***************************************************************
-// 3. مسار التحقق من Meta (GET)
+// 4. مسار التحقق من Meta (GET)
 // ***************************************************************
-// تستخدمه Meta للتأكد من أنك تملك هذا الرابط (Webhook URL)
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    // تحقق من الوضع والرمز
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
         console.log('Webhook Verified!');
         res.status(200).send(challenge);
     } else {
-        // رسالة تنبيه واضحة بعدم استخدام alert()
         console.error('Failed verification. Ensure the token is correct.');
         res.sendStatus(403);
     }
 });
 
 // ***************************************************************
-// 4. مسار استقبال رسائل المستخدمين (POST)
+// 5. مسار استقبال رسائل المستخدمين (POST)
 // ***************************************************************
 app.post('/webhook', (req, res) => {
     const data = req.body;
 
-    // التأكد من أن الحدث هو لصفحة Messenger
     if (data.object === 'page') {
         data.entry.forEach(entry => {
             entry.messaging.forEach(event => {
+                // معالجة الرسائل النصية فقط
                 if (event.message && event.message.text) {
                     handleMessage(event);
                 } else {
-                    // تجاهل الأحداث الأخرى مثل الإعجابات، إيصالات القراءة، إلخ.
-                    console.log("Received unhandled event:", event);
+                    console.log("Received unhandled event (e.g., read receipts, postbacks).");
                 }
             });
         });
 
-        // يجب الرد بـ 200 لـ Meta فورًا لتجنب إعادة إرسال الرسالة
+        // يجب الرد بـ 200 لـ Meta فورًا
         res.sendStatus(200);
     } else {
         res.sendStatus(404);
@@ -73,7 +85,7 @@ app.post('/webhook', (req, res) => {
 });
 
 // ***************************************************************
-// 5. دالة معالجة الرسائل وإرسالها إلى Dialogflow
+// 6. دالة معالجة الرسائل وإرسالها إلى Dialogflow
 // ***************************************************************
 async function handleMessage(event) {
     const senderId = event.sender.id;
@@ -81,21 +93,46 @@ async function handleMessage(event) {
 
     console.log(`User ${senderId} sent message: ${userMessage}`);
 
-    // ************************************************************************************
-    // NOTE: هذا الجزء يحتاج إعداد مصادقة (Authentication) مع Google/Dialogflow API
-    // (ستحتاج إلى ملف JSON لحساب الخدمة وربط الـ SDK)
-    // هذا هو الكود المعقد الذي كان يقوم به تكامل Dialogflow لك تلقائياً.
-    // ************************************************************************************
-    
-    // لغرض تجاوز المشكلة الإدارية: سنستخدم رداً بسيطاً مؤقتاً
-    const replyText = `[الوضع النشط مُعطَّل إدارياً] لقد تلقيت رسالتك: "${userMessage}". يجب أن يتم دمج Dialogflow API هنا.`;
+    // إنشاء مسار الجلسة (Session Path)
+    const sessionPath = sessionClient.projectAgentSessionPath(
+        DIALOGFLOW_PROJECT_ID, 
+        senderId // نستخدم الـ senderId كـ Session ID
+    );
 
-    // إرسال الرد إلى Messenger
-    sendMessengerResponse(senderId, replyText);
+    const request = {
+        session: sessionPath,
+        queryInput: {
+            text: {
+                text: userMessage,
+                languageCode: 'ar', // استخدام اللغة العربية
+            },
+        },
+    };
+
+    try {
+        // إرسال الرسالة إلى Dialogflow
+        const responses = await sessionClient.detectIntent(request);
+        const result = responses[0].queryResult;
+        
+        const fulfillmentText = result.fulfillmentText;
+
+        if (fulfillmentText) {
+            // إرسال الرد من Dialogflow إلى Messenger
+            sendMessengerResponse(senderId, fulfillmentText);
+        } else {
+            // رد احتياطي في حال عدم وجود رد من Dialogflow
+             sendMessengerResponse(senderId, "عفواً، لم أتمكن من فهم طلبك. هل يمكنك إعادة الصياغة؟");
+        }
+
+    } catch (error) {
+        console.error('ERROR in Dialogflow detection:', error);
+        // في حالة فشل الاتصال بـ Dialogflow
+        sendMessengerResponse(senderId, 'حدث خطأ فني أثناء معالجة طلبك (فشل اتصال Dialogflow).');
+    }
 }
 
 // ***************************************************************
-// 6. دالة إرسال الرد إلى Meta Messenger API
+// 7. دالة إرسال الرد إلى Meta Messenger API
 // ***************************************************************
 async function sendMessengerResponse(recipientId, text) {
     const url = `https://graph.facebook.com/v18.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
@@ -115,8 +152,18 @@ async function sendMessengerResponse(recipientId, text) {
 
 
 // ***************************************************************
-// 7. تشغيل الخادم
+// 8. تشغيل الخادم
 // ***************************************************************
 app.listen(PORT, () => {
     console.log(`Custom Webhook is running on port ${PORT}`);
 });
+
+// ```eof
+
+// ### 🚀 الإجراءات المطلوبة منك الآن
+
+// 1.  **حدث ملف `server.js`:** انسخ الكود أعلاه بالكامل واستبدل به محتوى ملف `server.js` في **GitHub**.
+// 2.  **الرفع:** قم بحفظ التغييرات (`Commit changes`). سيبدأ Vercel البناء التلقائي.
+// 3.  **الاختبار النهائي:** بمجرد أن يصبح الخادم جاهزاً في Vercel، أرسل رسالة جديدة للصفحة. **الرد يجب أن يأتي الآن من وكيل Dialogflow الخاص بك بشكل صحيح.**
+
+// هذه هي آخر خطوة برمجية، وبعد نجاح الردود، يمكنك إرسال التطبيق للمراجعة دون مشكلة التحقق من النشاط التجاري.
