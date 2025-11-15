@@ -397,65 +397,56 @@ const getPriceRange = (min, max, originalQuery) => {
  * تستخدم للرد على نية 'Catalog.Overview'.
  * متوافقة مع جميع المنصات (Telegram/Messenger).
  */
-function getAllProductsAsButtons() {
-  // 1. استخلاص جميع أسماء المنتجات الفريدة (أسماء الأزرار)
-  const allProductNames = Array.from(new Set(products.map(product => product.name)));
+const getAllProductsAsButtons = () => {
+  // 🛑 النص العام يجب أن يكون رسالة تمهيدية قصيرة
+  const responseText = 'لدينا مجموعة مختارة من الهدايا المميزة. اختر ما يثير اهتمامك:';
 
-  // 2. بناء مصفوفة الأزرار المسطحة الموحدة (للتنسيق بين المنصات)
-  const unifiedProductButtons = allProductNames.map(name => {
-    return {
-      text: name, // اسم المنتج على الزر
-      // القيمة التي سترسل إلى Dialogflow (سواء callback_data أو نص Quick Reply)
-      data: `سعر ${name}`
-    };
-  });
+  // 1. بناء الأزرار الموحدة للمنتجات
+  const productButtons = products.map(p => ({
+    text: p.name,
+    data: `كم سعر ${p.name}`
+  }));
 
-  // 3. بناء الرد النهائي
-  const responseText = `لدينا مجموعة مختارة من الهدايا المميزة. يرجى اختيار المنتج مباشرة من القائمة:`;
-
-  // ⬅️ 1. بناء الأزرار لـ Telegram (مصفوفة ثنائية الأبعاد)
-  const telegramKeyboard = unifiedProductButtons.map(btn => [{
-    text: btn.text,
-    callback_data: btn.data
-  }]);
-
-
-  // ⬅️ 2. بناء الرسالة النصية العامة (لـ Emulator)
-  const generalTextMessage = {
-    text: {
-      text: [responseText]
-    }
-  };
-
-  // ⬅️ 3. بناء رسالة Telegram الخاصة
-  const telegramButtonsMessage = {
+  // 2. بناء لوحة مفاتيح Telegram (Inline Keyboard)
+  const telegramKeyboard = {
     "platform": "telegram",
     "payload": {
       "telegram": {
-        "text": responseText,
+        "text": `📦 ${responseText}`,
+        "parse_mode": "Markdown",
         "reply_markup": {
-          "inline_keyboard": telegramKeyboard // مصفوفة الأزرار التي بنيناها
+          // توزيع الأزرار بشكل أكثر جمالية لـ Telegram (صفين في كل صف)
+          "inline_keyboard": [
+            // هذا المنطق يحول القائمة إلى صفوف
+            ...productButtons.map(btn => [{ text: btn.text, callback_data: btn.data }])
+          ]
         }
       }
     }
   };
 
-  // ⬅️ 4. الرسالة الجديدة لـ Messenger (Facebook)
+  // 3. بناء الردود السريعة لـ Messenger (Quick Replies)
   const messengerQuickReplies = {
     "platform": "facebook",
     "quickReplies": {
       "title": responseText,
-      // Messenger يستخدم مصفوفة النصوص فقط
-      "quickReplies": unifiedProductButtons.map(btn => btn.text)
+      "quickReplies": productButtons.map(btn => btn.text)
     }
   };
 
-  // ⬅️ 5. الإرجاع الموحد (بما في ذلك Messenger/Facebook)
+  // 4. بناء رسالة النص العامة (Fallback)
+  const generalTextMessage = {
+    text: { text: [responseText] }
+  };
+
   return {
     fulfillmentText: responseText,
-    fulfillmentMessages: [generalTextMessage, messengerQuickReplies, telegramButtonsMessage]
+    fulfillmentMessages: [generalTextMessage, telegramKeyboard, messengerQuickReplies]
   };
-}
+};
+
+// **ملاحظة:** يجب أن تتأكد أنك تستورد مصفوفة `products` في أعلى ملف `logic.js`
+// وتصدر هذه الدالة في `module.exports`
 
 
 
@@ -647,7 +638,7 @@ const getCategoryButtons = () => {
   const messengerQuickReplies = {
     "platform": "facebook",
     "quickReplies": {
-      "title": "اختر فئة الهدايا:",
+      "title": "مرحباً! أنا بوت متجر الهدايا. كيف يمكنني مساعدتك؟\nيمكنك البحث عن اسم منتج معين، أو اختر فئة من الأقسام التالية:",
       // Messenger يستخدم مصفوفة بسيطة من النصوص
       "quickReplies": categoryMap.map(btn => btn.text)
     }
