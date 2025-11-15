@@ -17,6 +17,17 @@
 // #####################end##########################
 
 
+// server.js - يجب أن تكون هذه الأسطر في بداية الملف
+require('dotenv').config();
+
+// ... (بقية استدعاءات المكتبات الأخرى، مثل express أو body-parser)
+const express = require('express');
+const bodyParser = require('body-parser');
+const botLogic = require('./logic'); // استيراد دوالك من logic.js
+
+const app = express();
+app.use(bodyParser.json());
+app.use(express.static('public'));
 
 // ... (البداية: require('dotenv')... const app = express(); app.use(bodyParser.json()); app.use(express.static('public'));)
 
@@ -120,4 +131,4 @@ app.post('/webhook', (req, res) => {
 
 
 // هذا التغيير يحوّل ملفك من خادم Node.js تقليدي إلى Serverless Function (وهو ما تتوقعه Vercel)، وبالتالي يحل خطأ ReferenceError: app is not defined الذي يظهر على السطر 24.
-module.exports = app;
+    module.exports = app;
