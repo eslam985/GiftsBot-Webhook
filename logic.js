@@ -477,55 +477,47 @@ const getHelpPayload = () => {
 
   const responseText = "من فضلك يرجى اختيار أحد الأوامر التالية أو كتابة اسم منتجك:";
 
-  // ⬅️ 1. بناء الأزرار (تظل كما هي)
+  // ⬅️ 1. تعريف مصفوفة الأزرار المشتركة (Buttons Array)
   const helpKeyboard = [
-    // 1. ✨ الأفضل تقييماً (الترتيب الجديد)
-    [
-      {
-        "callback_data": "/recommend",
-        "text": "✨ أفضل التوصيات"
-      }
-    ],
-    // 2. 📁 الأقسام/الفئات (الزر الجديد)
-    [
-      {
-        "text": "📁 عرض الأقسام",
-        "callback_data": "/show_categories" // ⬅️ إرسال أمر نصي صريح
-      }
-    ],
-    // 3. 📦 كل المنتجات (تغيير الاسم والترتيب)
-    [
-      {
-        "text": "📦 عرض كل المنتجات",
-        "callback_data": "/catalog"
-      }
-    ]
+    // تيليجرام: يعرض النص | ماسنجر: يعرض النص والـ payload هو النص
+    { text: "✨ أفضل التوصيات", data: "/recommend" },
+    { text: "📁 عرض الأقسام", data: "/show_categories" },
+    { text: "📦 عرض كل المنتجات", data: "/catalog" }
   ];
 
-  // ⬅️ 2. بناء الرسالة النصية العامة (لـ Messenger/Emulator)
-  const generalTextMessage = {
-    text: {
-      text: [responseText]
-    }
-  };
-
-  // ⬅️ 3. بناء رسالة Telegram الخاصة
+  // ⬅️ 2. بناء رسالة Telegram الخاصة (تظل كما هي)
   const telegramButtonsMessage = {
     "platform": "telegram",
     "payload": {
       "telegram": {
         "text": responseText,
         "reply_markup": {
-          "inline_keyboard": helpKeyboard
+          "inline_keyboard": helpKeyboard.map(btn => [{ text: btn.text, callback_data: btn.data }])
         }
       }
     }
   };
 
-  // ⬅️ 4. الإرجاع الموحد
+  // ⬅️ 3. الرسالة الجديدة لـ Messenger (Facebook)
+  const messengerQuickReplies = {
+    "platform": "facebook",
+    "quickReplies": {
+      "title": responseText,
+      "quickReplies": helpKeyboard.map(btn => btn.text) // Messenger يستخدم النص نفسه كقيمة
+    }
+  };
+
+  // ⬅️ 4. الرسالة النصية العامة (للمحاكي و احتياط Messenger)
+  const generalTextMessage = {
+    text: {
+      text: [responseText]
+    }
+  };
+
+  // ⬅️ 5. الإرجاع الموحد: نضمن ظهور الرسالة الخاصة بـ Messenger في الرد
   return {
-    fulfillmentText: responseText, // النص الكامل لـ Messenger/Emulator
-    fulfillmentMessages: [generalTextMessage, telegramButtonsMessage] // الردود المفصلة
+    fulfillmentText: responseText,
+    fulfillmentMessages: [generalTextMessage, messengerQuickReplies, telegramButtonsMessage] // الآن تشمل Facebook
   };
 };
 
