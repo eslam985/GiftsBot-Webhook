@@ -18,37 +18,29 @@
 
 
 
-// server.js - يجب أن تكون هذه الأسطر في بداية الملف
-require('dotenv').config();
-
-// ... (بقية استدعاءات المكتبات الأخرى، مثل express أو body-parser)
-const express = require('express');
-const bodyParser = require('body-parser');
-const botLogic = require('./logic'); // استيراد دوالك من logic.js
-
-const app = express();
-app.use(bodyParser.json());
-app.use(express.static('public'));
+// ... (البداية: require('dotenv')... const app = express(); app.use(bodyParser.json()); app.use(express.static('public'));)
 
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
 app.post('/webhook', (req, res) => {
-    const callbackQuery = req.body.callback_query;
+    const body = req.body;
+    const callbackQuery = body.callback_query;
 
     // **********************************************
-    // 1. معالجة ضغطات الأزرار (Callback Query)
+    // 1. معالجة ضغطات الأزرار (Callback Query - خاص بتيليجرام)
     // **********************************************
     if (callbackQuery) {
         const data = callbackQuery.data;
-        let newResponse;
+        let newResponse = {};
 
-        // تحديد الرد المطلوب بناءً على قيمة الزر (فقط الأزرار التي ترد بنص/قائمة طويلة)
+        // تحديد الرد المطلوب بناءً على قيمة الزر 
         if (data === '/catalog') {
             newResponse = botLogic.getAllProductsAsButtons();
         } else if (data === '/recommend') {
             newResponse = botLogic.getRecommendations();
         } else {
-            // إذا لم يكن زر كتالوج أو توصيات، نتركه لـ Dialogflow لمعالجته كنّية
-            // ونرسل رداً فورياً فارغاً لـ Telegram لمنع تكرار الرسالة
+            // إذا لم يكن زر كتالوج أو توصيات، نرسل رداً فورياً فارغاً لـ Telegram 
+            // ونترك Dialogflow يعالج الرد كنّية في الخلفية (وهو ما لا يحدث هنا لأننا نرجع JSON)
+            // لذا، نرسل رد فارغ لـ Telegram فقط.
             return res.json({});
         }
 
@@ -57,21 +49,26 @@ app.post('/webhook', (req, res) => {
             method: "sendMessage",
             chat_id: callbackQuery.message.chat.id,
             text: newResponse.fulfillmentText,
-            // استخراج الـ reply_markup من الـ payload
             reply_markup: newResponse.fulfillmentMessages[0]?.payload?.telegram?.reply_markup
         };
 
-        // إرسال الرد
+        // إرسال الرد لـ Telegram API
         return res.json(telegramResponse);
     }
-
+    
     // **********************************************
-    // 2. معالجة نوايا Dialogflow (Intents)
+    // 2. معالجة نوايا Dialogflow (Intents - يعمل مع ماسنجر ومحاكي DF)
     // **********************************************
 
-    // استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
-    const intent = req.body.queryResult.intent.displayName;
-    const parameters = req.body.queryResult.parameters;
+    // تأكد من أننا نستقبل البيانات الأساسية لـ Dialogflow
+    if (!body.queryResult || !body.queryResult.intent) {
+        console.error("Invalid Dialogflow request body.");
+        // إرجاع رد فارغ بدلاً من الـ 200 الصامت
+        return res.status(400).send("Bad Request: Missing queryResult.");
+    }
+    
+    const intent = body.queryResult.intent.displayName;
+    const parameters = body.queryResult.parameters;
 
     let response = {};
 
@@ -86,7 +83,7 @@ app.post('/webhook', (req, res) => {
     } else if (intent === 'Product.PriceRange') {
         const price_min = parameters.price_min;
         const price_max = parameters.price_max;
-        const originalQuery = req.body.queryResult.queryText;
+        const originalQuery = body.queryResult.queryText;
         response = botLogic.getPriceRange(price_min, price_max, originalQuery);
 
     } else if (intent === 'Catalog.Overview') {
@@ -100,13 +97,11 @@ app.post('/webhook', (req, res) => {
         response = botLogic.getCategory(categoryName);
 
     } else if (intent === 'Help.Inquiry') {
-        // نية المساعدة اليدوية
         response = {
             fulfillmentText: 'مرحباً! أنا جاهز للإجابة عن أسعار المنتجات أو عرض فئات الهدايا. يمكنك أيضاً استخدام القائمة الجانبية لتسهيل البحث.'
         };
 
     } else if (intent === 'Category.Display') {
-        // ⬅️ النية التي تعالج زر "عرض الأقسام" عبر الـ Webhook
         response = botLogic.getCategoryButtons();
 
     } else if (intent === 'CategoryQuery') {
@@ -114,16 +109,16 @@ app.post('/webhook', (req, res) => {
         response = botLogic.getCategory(categoryName);
 
     } else {
-        // ⬅️ نية غير معروفة (Default Fallback): نرسل رسالة المساعدة المعقدة
+        // نية غير معروفة (Default Fallback)
         response = botLogic.getHelpPayload();
     }
 
-    // إرسال الرد مرة أخرى إلى Dialogflow
+    // إرسال الرد إلى Dialogflow (هذا هو الرد الذي سيستخدمه ماسنجر)
     res.json(response);
 });
 
 // تشغيل الخادم على المنفذ 3000
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Webhook server listening on port ${PORT}`);
+    console.log(`Webhook server listening on port ${PORT}`);
 })
