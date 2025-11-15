@@ -123,9 +123,9 @@ const getPrice = (productName) => {
       }
     };
 
-    // 4. تجميع الردود وإرسالها: النص العام يأتي أولاً كـ Fallback
+    // 4. تجميع الردود وإرسالها:
     return {
-      fulfillmentText: '', // 🛑 تغيير حاسم: تم جعله فارغاً لمنع تكرار الرد في Telegram
+      fulfillmentText: responseText, // 🛑 يجب أن يحتوي النص الكامل ليعمل Messenger والمحاكي
       fulfillmentMessages: [generalTextMessage, telegramPhotoMessage, telegramTextMessage]
     };
 
