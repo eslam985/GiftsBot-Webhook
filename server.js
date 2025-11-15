@@ -17,7 +17,7 @@
 // #####################end##########################
 
 
-// server.js - يجب أن تكون هذه الأسطر في بداية الملف
+// server.js - يجب استبدال المحتوى بالكامل بهذا الكود
 require('dotenv').config();
 
 const express = require('express');
@@ -37,6 +37,7 @@ app.post('/webhook', (req, res) => {
  // 1. معالجة ضغطات الأزرار (Callback Query - خاص بتيليجرام)
  // **********************************************
  if (callbackQuery) {
+  // ... (لا تغيير في هذا الجزء)
   const data = callbackQuery.data;
   let newResponse = {};
 
@@ -52,7 +53,6 @@ app.post('/webhook', (req, res) => {
   const telegramResponse = {
    method: "sendMessage",
    chat_id: callbackQuery.message.chat.id,
-   // نستخدم هنا fulfillmentText من الدالة لأن الرد يتم مباشرة لـ Telegram API
    text: newResponse.fulfillmentText,
    reply_markup: newResponse.fulfillmentMessages[0]?.payload?.telegram?.reply_markup
   };
@@ -74,11 +74,14 @@ app.post('/webhook', (req, res) => {
  let response = {};
 
  // ⬇️ تحديد المنصة (Source) ⬇️
- // platformSource سيكون 'telegram' لـ Telegram، و 'facebook' لـ Messenger، وهكذا.
  const platformSource = body.originalDetectIntentRequest?.source;
 
  // مقارنة النية المستلمة بالنوايا الأخرى
- if (intent === 'Product.PriceFinal') {
+ if (intent === 'Default Welcome Intent') { // ⬅️ إضافة منطق نية الترحيب هنا
+  // نية الترحيب يجب أن تعرض الأقسام
+  response = botLogic.getCategoryButtons();
+
+ } else if (intent === 'Product.PriceFinal') {
   let productName = parameters.ProductName;
   if (Array.isArray(productName)) {
    productName = productName[0];
@@ -102,9 +105,8 @@ app.post('/webhook', (req, res) => {
   response = botLogic.getCategory(categoryName);
 
  } else if (intent === 'Help.Inquiry') {
-  response = {
-   fulfillmentText: 'مرحباً! أنا جاهز للإجابة عن أسعار المنتجات أو عرض فئات الهدايا. يمكنك أيضاً استخدام القائمة الجانبية لتسهيل البحث.'
-  };
+  // هذه النية تستدعي payload الأقل تعقيداً (الأزرار الثلاثة)
+  response = botLogic.getHelpPayload();
 
  } else if (intent === 'Category.Display') {
   response = botLogic.getCategoryButtons();
@@ -134,7 +136,6 @@ app.post('/webhook', (req, res) => {
 
    // 2. تصفية رسائل Facebook (Quick Replies)
   } else if (platformSource === 'facebook') {
-   // في حالة Facebook، نعتبر الرسالة الخاصة هي رسالة الـ quickReplies
    platformSpecificMessages = response.fulfillmentMessages.filter(
     message => message.platform === 'facebook'
    );
