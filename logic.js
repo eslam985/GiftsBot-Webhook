@@ -1,24 +1,33 @@
-// logic.js - تم تصحيح جميع التصديرات (Exports) ونقل منطق المعالجة هنا
-const dialogflow = require('@google-cloud/dialogflow');
-const uuid = require('uuid');
-// المتغيرات المطلوبة من بيئة Vercel
-const PROJECT_ID = process.env.DIALOGFLOW_PROJECT_ID;
-// تحليل مفتاح خدمة Google Cloud من متغير البيئة (الذي يحمل محتوى JSON)
-const credentials = process.env.GCP_CREDENTIALS ? JSON.parse(process.env.GCP_CREDENTIALS) : {};
-// إعداد عميل Dialogflow باستخدام بيانات الاعتماد الجديدة
-const sessionClient = new dialogflow.SessionsClient({ credentials });
-// استخدام المتغير الجديد
-const projectId = PROJECT_ID;
-// الدوال المساعدة والمتغيرات (يجب أن يتم تعريفها وتصديرها بـ exports. إذا لزم الأمر)
+// #####################start########################
+// _______________________1__________________________
+// name_file: logic.js
+// version_hash_id_gitHub: 8be1370696edb7efb8f89496a12c1af8e12d1e06
+// name_commit: تعديل رساالة من فضلك يرجى اختيار أحد الأوامر التالية أو كتابة اسم منتجك
+// Version description: هذا الملف اخر نسخة مستقرة وتدعم تليجرام فقط وهي مستقره جدا وليس بها مشاكل
 
+// **************************************************
+// ##################################################
+// **************************************************
+
+// _______________________2__________________________
+// name_file: logic.js
+// version_hash_id_gitHub: 5c7078fcd61726ec866b609bd58f03049df8179f
+// name_commit: نهائي تم تنظيف ملفي server.js وlogic.js للتكامل المباشر مع Dialogflow git push
+// Version description: تدعم المنصتين تليجرام ومسنجر لاكن بها مشاكل من حيث تدريب البوت والرد ع اسئلة محددة فقط 
+// #####################end##########################
+
+
+
+// This is a dummy change to force Vercel to rebuild cache.
+const express = require('express');
+const bodyParser = require('body-parser');
 const data = require('./data.json');// يتم استخدام require لتحميل ملف JSON مباشرة في Node.js
 const products = data.products; // استخراج مصفوفة المنتجات من الكائن
 const STORE_CONTACT_NUMBER = '01013080898'; // الرقم للعرض كنص
 const STORE_CONTACT_WHATSAPP = '201013080898'; // الرقم بالتنسيق الدولي (مثال: 201013080898)
 const WHATSAPP_LINK = `https://wa.me/${STORE_CONTACT_WHATSAPP}`;// ⬅️ بناء رابط واتساب القابل للنقر
-
-// الدالة المساعدة لتوحيد الأحرف العربية الأكثر شيوعاً
-exports.normalizeArabic = (text) => {
+// الدالة المساعدة لتوحيد الأحرف العربية الأكثر شيوعاً التي تسبب فشل المطابقة
+const normalizeArabic = (text) => {
   if (!text) return '';
   // توحيد الألف (أ, إ, آ) إلى (ا)
   // توحيد الألف المقصورة (ى) إلى (ي)
@@ -29,15 +38,12 @@ exports.normalizeArabic = (text) => {
 };
 
 
-// **********************************************************************************
-// 1. دالة إرسال الرسالة إلى Dialogflow (مطلوبة لـ Messenger)
-// **********************************************************************************
 
 /**
  * دالة للحصول على سعر ووصف منتج معين بناءً على اسمه.
- * تم تصديرها: exports.getPrice
+ * ...
  */
-exports.getPrice = (productName) => {
+const getPrice = (productName) => {
   // ⬅️ 1. الكود المفقود: تعريف المتغيرات وتنظيف اسم المنتج 
   if (!productName || typeof productName !== 'string') {
     return 'عفواً، يرجى تحديد اسم المنتج الذي تريد معرفة سعره.';
@@ -98,27 +104,43 @@ exports.getPrice = (productName) => {
 
   } else {
     // ... (منطق البحث كاسم فئة ورسائل الخطأ يبقى كما هو) ...
+    // ملاحظة: دالة getCategory تحتاج إلى تعريف أو استيراد إن لم تكن موجودة عالمياً
+    // بما أنك تستخدمها في server.js فهي موجودة، لذلك نترك هذا الجزء كما هو.
     return `آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`;
   }
 };
 
 
+
+
 // خريطة لترجمة الأسماء العربية الشائعة للفئات إلى الاسم الإنجليزي المستخدم في data.json
+// ... (في logic.js) ...
 const categoryMap = {
+  // ... (بقية الفئات)
   'مجوهرات': 'Jewelry',
   'اكسسوارات': 'Jewelry',
-  "هدايا رجالية": "Men's Gifts",
-  "هدية رجالي": "Men's Gifts",
+  "هدايا رجالية": "Men's Gifts", // ⬅️ الصيغة الحالية (التي تعمل مع "أريد هدايا رجالية")
+  "هدية رجالي": "Men's Gifts",   // ⬅️ الإضافة المطلوبة (التي ستعمل مع "عايز هدية رجالي")
   'home goods': 'Home Goods',
   'مستلزمات منزلية': 'Home Goods',
 };
 
 
+
 /**
  * دالة للحصول على قائمة بالمنتجات في فئة معينة.
- * تم تصديرها: exports.getCategory
+ * @param {string} categoryName - اسم الفئة المراد البحث عنها (قد يكون عربي أو إنجليزي).
+ * @returns {string} - رسالة تحتوي على المنتجات أو رسالة خطأ.
  */
-exports.getCategory = (categoryName) => {
+/**
+ * دالة للحصول على قائمة بالمنتجات في فئة معينة، تم تعديلها لإرجاع Custom Payload
+ * يحتوي على أزرار مضمنة (Inline Buttons) في تليجرام.
+ */
+/**
+ * دالة للحصول على قائمة بالمنتجات في فئة معينة، تم تعديلها لإرجاع Custom Payload
+ * يحتوي على أزرار مضمنة (Inline Buttons) في تليجرام.
+ */
+const getCategory = (categoryName) => {
   if (!categoryName) {
     return { fulfillmentText: "من فضلك حدد اسم الفئة التي تبحث عنها." };
   }
@@ -148,7 +170,9 @@ exports.getCategory = (categoryName) => {
     // ⬅️ 1. بناء مصفوفة الأزرار: كل منتج في صف منفصل
     const productButtons = filteredProducts.map(product => {
       return [{
-        text: product.name,
+        text: product.name, // اسم المنتج الظاهر على الزر
+        // عند النقر، نرسل طلب نصي بسيط لـ Dialogflow ليبحث عن السعر مباشرة
+        // (سنتأكد لاحقًا أن دالة getPrice تستطيع التعامل مع هذا النص)
         callback_data: `سعر ${product.name}`
       }];
     });
@@ -178,11 +202,16 @@ exports.getCategory = (categoryName) => {
 };
 
 
+
+
+
 /**
  * دالة لمعالجة طلبات الشراء وتوجيه المستخدم لصفحة الدفع.
- * تم تصديرها: exports.getPriceRange
+ * @param {string} productName - اسم المنتج الذي يريد المستخدم شراءه.
+ * @returns {string} - رسالة توجيهية مع رابط الشراء.
  */
-exports.getPriceRange = (min, max, originalQuery) => {
+// ⬇️ استقبال المتغير الجديد: originalQuery ⬇️
+const getPriceRange = (min, max, originalQuery) => {
   // 1. استخلاص القيمة الافتراضية
   let minPrice = 0;
   let maxPrice = Infinity;
@@ -195,8 +224,7 @@ exports.getPriceRange = (min, max, originalQuery) => {
 
     // 1. حالة النطاق المزدوج ("بين X و Y")
     if (originalQuery.includes('بين') && matches.length >= 2) {
-      minPrice = parseInt(matches[0]);
-      maxPrice = parseInt(matches[1]);
+      // ... (منطق النطاق المزدوج كما هو) ...
 
     } else {
       // 2. تجميع كل الكلمات التي تعني "الحد الأدنى"
@@ -205,23 +233,23 @@ exports.getPriceRange = (min, max, originalQuery) => {
         originalQuery.includes('تزيد عن') ||
         originalQuery.includes('فوق');
 
-      // 3. تجميع كل الكلمات التي تعني "الحد الأقصى"
+      // 3. تجميع كل الكلمات التي تعني "الحد الأقصى" (نستبعد كلمة 'جنية' من الشروط الصارمة)
       const isMaxLimit = originalQuery.includes('أقل من') ||
         originalQuery.includes('ينقص عن') ||
         originalQuery.includes('تحت') ||
-        originalQuery.includes('أقصى سعر');
+        originalQuery.includes('أقصى سعر'); // ⬅️ إضافة أقصى سعر
 
       // 4. تطبيق المنطق: نُعطي أولوية مطلقة للنية (أكثر من/أقل من)
-      if (isMinLimit) {
+      if (isMinLimit) { // ⬅️ نعطي الأولوية للحد الأدنى (الأكثر تخصصاً)
         minPrice = parseInt(matches[0]);
         maxPrice = Infinity;
 
-      } else if (isMaxLimit) {
+      } else if (isMaxLimit) { // ⬅️ ثم الحد الأقصى (الأكثر تخصصاً)
         maxPrice = parseInt(matches[0]);
         minPrice = 0;
 
       } else {
-        // 5. حالة الرقم المفرد (افتراضياً: حد أقصى)
+        // 5. حالة الرقم المفرد (افتراضياً: حد أقصى. هنا نعتبر 'جنية' دليل على الحد الأقصى)
         maxPrice = parseInt(matches[0]);
         minPrice = 0;
       }
@@ -270,14 +298,16 @@ exports.getPriceRange = (min, max, originalQuery) => {
       }
     }]
   };
-};
+}; // ⬅️ انتهت الدالة هنا
+
+
 
 
 /**
  * تجلب جميع أسماء المنتجات المتاحة وتحولها إلى أزرار مضمنة (Inline Buttons).
- * تم تصديرها: exports.getAllProductsAsButtons
+ * تستخدم للرد على نية 'Catalog.Overview'.
  */
-exports.getAllProductsAsButtons = () => {
+function getAllProductsAsButtons() {
   // ⬅️ استخدام مصفوفة المنتجات الجاهزة والمستوردة في بداية logic.js
 
   // 1. استخلاص جميع أسماء المنتجات مباشرة من مصفوفة 'products'
@@ -292,6 +322,7 @@ exports.getAllProductsAsButtons = () => {
   });
 
   // 3. بناء الـ Custom Payload وإرجاعه
+  // ... (بقية الكود الخاص ببناء الـ Payload يبقى كما هو) ...
   const responseText = `لدينا مجموعة مختارة من الهدايا المميزة. يرجى اختيار المنتج مباشرة من القائمة:`;
 
   return {
@@ -311,11 +342,13 @@ exports.getAllProductsAsButtons = () => {
 }
 
 
+
+
 /**
  * تجلب أفضل 3 منتجات بناءً على "recommendation_score" وتحولها إلى أزرار.
- * تم تصديرها: exports.getRecommendations
+ * الأولوية التسويقية هي الأعلى (الرقم الأكبر).
  */
-exports.getRecommendations = () => {
+const getRecommendations = () => {
   // 1. الفرز: ترتيب المنتجات تنازلياً (الأعلى score أولاً)
   const sortedProducts = products.slice().sort((a, b) => {
     // نضمن أن المنتجات التي ليس لها score ستأتي في النهاية
@@ -362,11 +395,11 @@ exports.getRecommendations = () => {
 };
 
 
-/**
- * دالة جديدة مخصصة للرد برسالة المساعدة والأزرار (العودة للصفحة الرئيسية).
- * تم تصديرها: exports.getHelpPayload
- */
-exports.getHelpPayload = () => {
+
+
+
+// دالة جديدة مخصصة للرد برسالة المساعدة والأزرار
+const getHelpPayload = () => {
   // ⬅️ نستخدم هنا الـ callback_data الذي يعمل بشكل مستقر: /recommend و /catalog
   return {
     fulfillmentMessages: [{
@@ -375,21 +408,21 @@ exports.getHelpPayload = () => {
           text: "من فضلك يرجى اختيار أحد الأوامر التالية أو كتابة اسم منتجك:",
           reply_markup: {
             inline_keyboard: [
-              // 1. ✨ الأفضل تقييماً 
+              // 1. ✨ الأفضل تقييماً (الترتيب الجديد)
               [
                 {
                   "callback_data": "/recommend",
                   "text": "✨ أفضل التوصيات"
                 }
               ],
-              // 2. 📁 الأقسام/الفئات 
+              // 2. 📁 الأقسام/الفئات (الزر الجديد)
               [
                 {
                   "text": "📁 عرض الأقسام",
-                  "callback_data": "/show_categories"
+                  "callback_data": "/show_categories" // ⬅️ إرسال أمر نصي صريح
                 }
               ],
-              // 3. 📦 كل المنتجات 
+              // 3. 📦 كل المنتجات (تغيير الاسم والترتيب)
               [
                 {
                   "text": "📦 عرض كل المنتجات",
@@ -406,11 +439,11 @@ exports.getHelpPayload = () => {
 };
 
 
-/**
- * دالة مخصصة لعرض الفئات (تحل محل Default Welcome Intent عند ضغط زر).
- * تم تصديرها: exports.getCategoryButtons
- */
-exports.getCategoryButtons = () => {
+
+
+// دالة جديدة مخصصة لعرض الفئات (التي تعمل كـ /start)
+// دالة مخصصة لعرض الفئات (تحل محل Default Welcome Intent عند ضغط الزر)
+const getCategoryButtons = () => {
   // هذا هو الـ JSON الذي أرسلته والذي يعمل بشكل مؤكد في نية الترحيب
   return {
     fulfillmentMessages: [{
@@ -437,95 +470,17 @@ exports.getCategoryButtons = () => {
 };
 
 
-// **********************************************************************************
-// 2. دالة معالجة الـ Webhook الواردة من Dialogflow (مطلوبة لـ Telegram)
-// **********************************************************************************
 
-/**
- * الدالة الرئيسية لمعالجة طلبات Dialogflow (الـ Webhook)
- * تم تصديرها: exports.processDialogflowWebhook
- */
-exports.processDialogflowWebhook = (req, res) => {
 
-  // هنا انتقل منطق معالجة النوايا والأزرار من server.js
 
-  const callbackQuery = req.body.callback_query;
-
-  // **********************************************
-  // 1. معالجة ضغطات الأزرار (Callback Query) - خاص بـ Telegram
-  // **********************************************
-  if (callbackQuery) {
-    const data = callbackQuery.data;
-    let newResponse;
-
-    // تحديد الرد المطلوب بناءً على قيمة الزر 
-    if (data === '/catalog') {
-      newResponse = exports.getAllProductsAsButtons();
-    } else if (data === '/recommend') {
-      newResponse = exports.getRecommendations();
-    } else {
-      return res.json({});
-    }
-
-    // تجهيز الرد لـ Telegram (sendMessage)
-    const telegramResponse = {
-      method: "sendMessage",
-      chat_id: callbackQuery.message.chat.id,
-      text: newResponse.fulfillmentText,
-      reply_markup: newResponse.fulfillmentMessages[0]?.payload?.telegram?.reply_markup
-    };
-    return res.json(telegramResponse);
-  }
-
-  // **********************************************
-  // 2. معالجة نوايا Dialogflow (Intents)
-  // **********************************************
-
-  const intent = req.body.queryResult.intent.displayName;
-  const parameters = req.body.queryResult.parameters;
-
-  let response = {};
-
-  // مقارنة النية المستلمة بالنوايا الأخرى
-  if (intent === 'Product.PriceFinal') {
-    let productName = parameters.ProductName;
-    if (Array.isArray(productName)) {
-      productName = productName[0];
-    }
-    response = exports.getPrice(productName);
-
-  } else if (intent === 'Product.PriceRange') {
-    const price_min = parameters.price_min;
-    const price_max = parameters.price_max;
-    const originalQuery = req.body.queryResult.queryText;
-    response = exports.getPriceRange(price_min, price_max, originalQuery);
-
-  } else if (intent === 'Catalog.Overview') {
-    response = exports.getAllProductsAsButtons();
-
-  } else if (intent === 'Product.Recommendation') {
-    response = exports.getRecommendations();
-
-  } else if (intent === 'Gift.Inquiry - Category') {
-    const categoryName = parameters.category_name;
-    response = exports.getCategory(categoryName);
-
-  } else if (intent === 'Help.Inquiry') {
-    response = {
-      fulfillmentText: 'مرحباً! أنا جاهز للإجابة عن أسعار المنتجات أو عرض فئات الهدايا. يمكنك أيضاً استخدام القائمة الجانبية لتسهيل البحث.'
-    };
-
-  } else if (intent === 'Category.Display') {
-    response = exports.getCategoryButtons();
-
-  } else if (intent === 'CategoryQuery') {
-    const categoryName = parameters.category_name;
-    response = exports.getCategory(categoryName);
-
-  } else {
-    response = exports.getHelpPayload();
-  }
-
-  // إرسال الرد مرة أخرى إلى Dialogflow
-  res.json(response);
-};
+// ... (تأكد من تصدير الدالة الجديدة)
+module.exports = {
+  products,
+  getPrice,
+  getCategory,
+  getPriceRange,
+  getAllProductsAsButtons,
+  getRecommendations,
+  getHelpPayload,
+  getCategoryButtons,
+}; 

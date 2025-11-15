@@ -1,169 +1,129 @@
-// هذا خادم Node.js يعمل كوسيط لاستقبال رسائل Meta ثم إرسالها إلى Dialogflow.
-// هذا الكود يتطلب أن تكون قيمة مفتاح حساب الخدمة (Service Account Key JSON) 
-// موجودة كمتغير بيئة سري باسم GCP_CREDENTIALS في إعدادات Vercel.
+// #####################start########################
+// _______________________1__________________________
+// name_file: server.js
+// version_hash_id_gitHub: e760c0e17854b8c3c2370d9f798a68635a7c93c1
+// name_commit: Secure environment setup: Implement dotenv and update .gitignore.
+// Version description: هذا الملف اخر نسخة مستقرة وتدعم تليجرام فقط وهي مستقره جدا وليس بها مشاكل
 
+// **************************************************
+// ##################################################
+// **************************************************
+
+// _______________________2__________________________
+// name_file: server.js
+// version_hash_id_gitHub: a7ceaaad6460f6046a62ce3a3d1ea3f3db836a41
+// name_commit: الإصلاح النهائي: تمكين اتصال API الخاص بـ Dialogflow عبر GCP_CREDENTIALS
+// Version description: تدعم المنصتين تليجرام ومسنجر لاكن بها مشاكل من حيث تدريب البوت والرد ع اسئلة محددة فقط 
+// #####################end##########################
+
+
+
+// server.js - يجب أن تكون هذه الأسطر في بداية الملف
+require('dotenv').config();
+
+// ... (بقية استدعاءات المكتبات الأخرى، مثل express أو body-parser)
 const express = require('express');
 const bodyParser = require('body-parser');
-const axios = require('axios'); 
-const dialogflow = require('@google-cloud/dialogflow');
+const botLogic = require('./logic'); // استيراد دوالك من logic.js
+
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// ***************************************************************
-// 1. المتغيرات السرية (تم تعبئتها بناءً على إدخالك السابق)
-// ***************************************************************
-const VERIFY_TOKEN = 'verifyBot'; 
-const PAGE_ACCESS_TOKEN = 'EAAWflOct5CABPzylk0rwBjK337RZBYreX5mvtb2tYm8dFZCYU1IbMlDGzqMLwuibxQ4JStSOiitzI1lZCWZAIL9a2sI8WLc99edpDok1lhq5JKGuZAn3vXvjUHncdzkuwNcBgkpe2IGKJmSJui0BQfQqsSz1cmFDykHxQHWTdzRe7ZCkGD1rNp65K0ZAI8PvnJUsbyPwgZDZD'; 
-const DIALOGFLOW_PROJECT_ID = 'giftsbot-nhop'; 
-
-// ***************************************************************
-// 2. إعداد Dialogflow Client 
-// ***************************************************************
-// المصادقة تتم عبر متغير البيئة السري GCP_CREDENTIALS
-const keyFileContent = process.env.GCP_CREDENTIALS;
-if (!keyFileContent) {
-    console.error("CRITICAL ERROR: GCP_CREDENTIALS environment variable is missing in Vercel. Bot will not respond correctly.");
-}
-
-let credentials = {};
-try {
-    if (keyFileContent) {
-        credentials = JSON.parse(keyFileContent);
-    }
-} catch (e) {
-    console.error("ERROR: Failed to parse GCP_CREDENTIALS environment variable as JSON.", e);
-}
-
-const sessionClient = new dialogflow.SessionsClient({ credentials });
-
-// ***************************************************************
-// 3. إعداد الخادم
-// ***************************************************************
-
 app.use(bodyParser.json());
+app.use(express.static('public'));
 
-// ***************************************************************
-// 4. مسار التحقق من Meta (GET)
-// ***************************************************************
-app.get('/webhook', (req, res) => {
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
+// الدالة الرئيسية لاستقبال طلبات Dialogflow
+app.post('/', (req, res) => {
+    const callbackQuery = req.body.callback_query;
 
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-        console.log('Webhook Verified!');
-        res.status(200).send(challenge);
-    } else {
-        console.error('Failed verification. Ensure the token is correct.');
-        res.sendStatus(403);
-    }
-});
+    // **********************************************
+    // 1. معالجة ضغطات الأزرار (Callback Query)
+    // **********************************************
+    if (callbackQuery) {
+        const data = callbackQuery.data;
+        let newResponse;
 
-// ***************************************************************
-// 5. مسار استقبال رسائل المستخدمين (POST)
-// ***************************************************************
-app.post('/webhook', (req, res) => {
-    const data = req.body;
-
-    if (data.object === 'page') {
-        data.entry.forEach(entry => {
-            entry.messaging.forEach(event => {
-                // معالجة الرسائل النصية فقط
-                if (event.message && event.message.text) {
-                    handleMessage(event);
-                } else {
-                    console.log("Received unhandled event (e.g., read receipts, postbacks).");
-                }
-            });
-        });
-
-        // يجب الرد بـ 200 لـ Meta فورًا
-        res.sendStatus(200);
-    } else {
-        res.sendStatus(404);
-    }
-});
-
-// ***************************************************************
-// 6. دالة معالجة الرسائل وإرسالها إلى Dialogflow
-// ***************************************************************
-async function handleMessage(event) {
-    const senderId = event.sender.id;
-    const userMessage = event.message.text;
-
-    console.log(`User ${senderId} sent message: ${userMessage}`);
-
-    // إنشاء مسار الجلسة (Session Path)
-    const sessionPath = sessionClient.projectAgentSessionPath(
-        DIALOGFLOW_PROJECT_ID, 
-        senderId // نستخدم الـ senderId كـ Session ID
-    );
-
-    const request = {
-        session: sessionPath,
-        queryInput: {
-            text: {
-                text: userMessage,
-                languageCode: 'ar', // استخدام اللغة العربية
-            },
-        },
-    };
-
-    try {
-        // إرسال الرسالة إلى Dialogflow
-        const responses = await sessionClient.detectIntent(request);
-        const result = responses[0].queryResult;
-        
-        const fulfillmentText = result.fulfillmentText;
-
-        if (fulfillmentText) {
-            // إرسال الرد من Dialogflow إلى Messenger
-            sendMessengerResponse(senderId, fulfillmentText);
+        // تحديد الرد المطلوب بناءً على قيمة الزر (فقط الأزرار التي ترد بنص/قائمة طويلة)
+        if (data === '/catalog') {
+            newResponse = botLogic.getAllProductsAsButtons();
+        } else if (data === '/recommend') {
+            newResponse = botLogic.getRecommendations();
         } else {
-            // رد احتياطي في حال عدم وجود رد من Dialogflow
-             sendMessengerResponse(senderId, "عفواً، لم أتمكن من فهم طلبك. هل يمكنك إعادة الصياغة؟");
+            // إذا لم يكن زر كتالوج أو توصيات، نتركه لـ Dialogflow لمعالجته كنّية
+            // ونرسل رداً فورياً فارغاً لـ Telegram لمنع تكرار الرسالة
+            return res.json({});
         }
 
-    } catch (error) {
-        console.error('ERROR in Dialogflow detection:', error);
-        // في حالة فشل الاتصال بـ Dialogflow
-        sendMessengerResponse(senderId, 'حدث خطأ فني أثناء معالجة طلبك (فشل اتصال Dialogflow).');
+        // تجهيز الرد لـ Telegram (sendMessage)
+        const telegramResponse = {
+            method: "sendMessage",
+            chat_id: callbackQuery.message.chat.id,
+            text: newResponse.fulfillmentText,
+            // استخراج الـ reply_markup من الـ payload
+            reply_markup: newResponse.fulfillmentMessages[0]?.payload?.telegram?.reply_markup
+        };
+
+        // إرسال الرد
+        return res.json(telegramResponse);
     }
-}
 
-// ***************************************************************
-// 7. دالة إرسال الرد إلى Meta Messenger API
-// ***************************************************************
-async function sendMessengerResponse(recipientId, text) {
-    const url = `https://graph.facebook.com/v18.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+    // **********************************************
+    // 2. معالجة نوايا Dialogflow (Intents)
+    // **********************************************
 
-    const messageData = {
-        recipient: { id: recipientId },
-        message: { text: text }
-    };
+    // استخراج النية (Intent) واسم المعاملات (Parameters) من طلب Dialogflow
+    const intent = req.body.queryResult.intent.displayName;
+    const parameters = req.body.queryResult.parameters;
 
-    try {
-        await axios.post(url, messageData);
-        console.log('Message sent successfully to Meta.');
-    } catch (error) {
-        console.error('Error sending message to Meta:', error.response ? error.response.data : error.message);
+    let response = {};
+
+    // مقارنة النية المستلمة بالنوايا الأخرى
+    if (intent === 'Product.PriceFinal') {
+        let productName = parameters.ProductName;
+        if (Array.isArray(productName)) {
+            productName = productName[0];
+        }
+        response = botLogic.getPrice(productName);
+
+    } else if (intent === 'Product.PriceRange') {
+        const price_min = parameters.price_min;
+        const price_max = parameters.price_max;
+        const originalQuery = req.body.queryResult.queryText;
+        response = botLogic.getPriceRange(price_min, price_max, originalQuery);
+
+    } else if (intent === 'Catalog.Overview') {
+        response = botLogic.getAllProductsAsButtons();
+
+    } else if (intent === 'Product.Recommendation') {
+        response = botLogic.getRecommendations();
+
+    } else if (intent === 'Gift.Inquiry - Category') {
+        const categoryName = parameters.category_name;
+        response = botLogic.getCategory(categoryName);
+
+    } else if (intent === 'Help.Inquiry') {
+        // نية المساعدة اليدوية
+        response = {
+            fulfillmentText: 'مرحباً! أنا جاهز للإجابة عن أسعار المنتجات أو عرض فئات الهدايا. يمكنك أيضاً استخدام القائمة الجانبية لتسهيل البحث.'
+        };
+
+    } else if (intent === 'Category.Display') {
+        // ⬅️ النية التي تعالج زر "عرض الأقسام" عبر الـ Webhook
+        response = botLogic.getCategoryButtons();
+
+    } else if (intent === 'CategoryQuery') {
+        const categoryName = parameters.category_name;
+        response = botLogic.getCategory(categoryName);
+
+    } else {
+        // ⬅️ نية غير معروفة (Default Fallback): نرسل رسالة المساعدة المعقدة
+        response = botLogic.getHelpPayload();
     }
-}
 
-
-// ***************************************************************
-// 8. تشغيل الخادم
-// ***************************************************************
-app.listen(PORT, () => {
-    console.log(`Custom Webhook is running on port ${PORT}`);
+    // إرسال الرد مرة أخرى إلى Dialogflow
+    res.json(response);
 });
 
-// ```eof
-
-// ### 🚀 الإجراءات المطلوبة منك الآن
-
-// 1.  **حدث ملف `server.js`:** انسخ الكود أعلاه بالكامل واستبدل به محتوى ملف `server.js` في **GitHub**.
-// 2.  **الرفع:** قم بحفظ التغييرات (`Commit changes`). سيبدأ Vercel البناء التلقائي.
-// 3.  **الاختبار النهائي:** بمجرد أن يصبح الخادم جاهزاً في Vercel، أرسل رسالة جديدة للصفحة. **الرد يجب أن يأتي الآن من وكيل Dialogflow الخاص بك بشكل صحيح.**
-
-// هذه هي آخر خطوة برمجية، وبعد نجاح الردود، يمكنك إرسال التطبيق للمراجعة دون مشكلة التحقق من النشاط التجاري.
+// تشغيل الخادم على المنفذ 3000
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`Webhook server listening on port ${PORT}`);
+})
