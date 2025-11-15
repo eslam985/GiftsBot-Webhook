@@ -31,7 +31,7 @@ app.use(bodyParser.json());
 app.use(express.static('public'));
 
 // الدالة الرئيسية لاستقبال طلبات Dialogflow
-app.post('/', (req, res) => {
+app.post('/webhook', (req, res) => {
     const callbackQuery = req.body.callback_query;
 
     // **********************************************
