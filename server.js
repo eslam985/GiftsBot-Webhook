@@ -119,22 +119,36 @@ app.post('/webhook', (req, res) => {
  }
 
  // *************************************************************
- // 🛑 منطق التصفية الحاسم: إزالة الرسائل العامة لـ Telegram
+ // 🛑 منطق التصفية الحاسم: إزالة الرسائل العامة لمنع التكرار في المنصات
  // *************************************************************
- if (platformSource === 'telegram' && response.fulfillmentMessages) {
+ if (response.fulfillmentMessages) {
+  let platformSpecificMessages = [];
+  let platformMessagesExist = false;
 
-  // 1. الاحتفاظ فقط بالرسائل المحددة بـ "platform": "telegram"
-  const telegramMessages = response.fulfillmentMessages.filter(
-   message => message.platform === 'telegram'
-  );
+  // 1. تصفية رسائل Telegram
+  if (platformSource === 'telegram') {
+   platformSpecificMessages = response.fulfillmentMessages.filter(
+    message => message.platform === 'telegram'
+   );
+   platformMessagesExist = platformSpecificMessages.length > 0;
 
-  // 2. تحديث الرد:
-  if (telegramMessages.length > 0) {
-   response.fulfillmentMessages = telegramMessages;
-   // 🛑 تفريغ النص العام لضمان عدم تكراره (سيستخدم Telegram الرسائل المصفاة فقط)
+   // 2. تصفية رسائل Facebook (Quick Replies)
+  } else if (platformSource === 'facebook') {
+   // في حالة Facebook، نعتبر الرسالة الخاصة هي رسالة الـ quickReplies
+   platformSpecificMessages = response.fulfillmentMessages.filter(
+    message => message.platform === 'facebook'
+   );
+   platformMessagesExist = platformSpecificMessages.length > 0;
+  }
+
+  // 3. إذا وجدنا رسائل خاصة بالمنصة، نرسلها ونلغي النص العام
+  if (platformMessagesExist) {
+   response.fulfillmentMessages = platformSpecificMessages;
+   // تفريغ النص العام لضمان عدم تكراره (ستستخدم المنصة الرسائل المصفاة فقط)
    response.fulfillmentText = '';
   }
  }
+
 
  // إرسال الرد النهائي إلى Dialogflow
  res.json(response);
