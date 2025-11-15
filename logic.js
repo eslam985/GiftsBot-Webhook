@@ -125,7 +125,7 @@ const getPrice = (productName) => {
 
     // 4. تجميع الردود وإرسالها: النص العام يأتي أولاً كـ Fallback
     return {
-      fulfillmentText: responseText, // ضروري ليعمل المحاكي
+      fulfillmentText: '', // 🛑 تغيير حاسم: تم جعله فارغاً لمنع تكرار الرد في Telegram
       fulfillmentMessages: [generalTextMessage, telegramPhotoMessage, telegramTextMessage]
     };
 
