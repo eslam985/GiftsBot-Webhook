@@ -117,8 +117,7 @@ app.post('/webhook', (req, res) => {
     res.json(response);
 });
 
-// تشغيل الخادم على المنفذ 3000
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Webhook server listening on port ${PORT}`);
-})
+
+
+// هذا التغيير يحوّل ملفك من خادم Node.js تقليدي إلى Serverless Function (وهو ما تتوقعه Vercel)، وبالتالي يحل خطأ ReferenceError: app is not defined الذي يظهر على السطر 24.
+module.exports = app;
