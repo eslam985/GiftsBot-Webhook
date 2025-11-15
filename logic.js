@@ -132,7 +132,7 @@ const getPrice = (productName) => {
   } else {
     // 🛑 تم تغيير الرد إلى تنسيق JSON صحيح
     // نبحث كفئة أولاً
-    const categoryResponse = botLogic.getCategory(productName);
+    const categoryResponse = getCategory(productName);
     if (categoryResponse.fulfillmentText !== `آسف، لا توجد منتجات للفئة "${productName}" حالياً.`) {
       return categoryResponse;
     }
