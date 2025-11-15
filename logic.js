@@ -88,11 +88,11 @@ const getPrice = (productName) => {
       }
     }
 
-    // ⬇️ بقية الكود (تجهيز الرد البصري) ⬇️
     const STORE_CONTACT_NUMBER = '01013080898';
     const WHATSAPP_LINK = `https://wa.me/2${STORE_CONTACT_NUMBER}`;
 
-    const responseText = `سعر ${targetProduct.name} هو **${targetProduct.price} جنيه**.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة عبر:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
+    // 🛑 التعديل هنا: نستخدم الرابط العاري ورقم الهاتف بشكل منفصل لضمان عمله في واتساب على سطح المكتب
+    const responseText = `سعر ${targetProduct.name} هو **${targetProduct.price} جنيه**.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة عبر:**\n📞 رقم التواصل: ${STORE_CONTACT_NUMBER}\n🔗 رابط واتساب مباشر: ${WHATSAPP_LINK}`;
 
     // 1. رسالة النص العامة (للمحاكي و Messenger)
     const generalTextMessage = {
