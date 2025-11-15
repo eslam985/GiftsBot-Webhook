@@ -40,19 +40,38 @@ const normalizeArabic = (text) => {
 
 
 /**
+ * دالة مساعدة لإنشاء استجابة Dialogflow صالحة من نص بسيط.
+ */
+const createDialogflowResponse = (text) => {
+  return {
+    fulfillmentText: text, // النص الاحتياطي لجميع المنصات
+    fulfillmentMessages: [
+      {
+        text: {
+          text: [text]
+        }
+      }
+    ]
+  };
+};
+
+/**
  * دالة للحصول على سعر ووصف منتج معين بناءً على اسمه.
- * ...
+ *
+ * @param {string} productName اسم المنتج.
+ * @returns {object} استجابة Dialogflow JSON.
  */
 const getPrice = (productName) => {
   // ⬅️ 1. الكود المفقود: تعريف المتغيرات وتنظيف اسم المنتج 
   if (!productName || typeof productName !== 'string') {
-    return 'عفواً، يرجى تحديد اسم المنتج الذي تريد معرفة سعره.';
+    // 🛑 تم تغيير الرد إلى تنسيق JSON صحيح
+    return createDialogflowResponse('عفواً، يرجى تحديد اسم المنتج الذي تريد معرفة سعره.');
   }
 
   const cleanProductName = productName.toLowerCase().trim();
   let targetProduct = null;
 
-  // ⬅️ 2. بداية المنطق الذي كان سبب المشكلة (الآن يعمل)
+  // ⬅️ 2. بداية المنطق
   const potentialProducts = products.filter(product => {
     return product.name.toLowerCase().includes(cleanProductName);
   });
@@ -75,8 +94,15 @@ const getPrice = (productName) => {
 
     const responseText = `سعر ${targetProduct.name} هو **${targetProduct.price} جنيه**.\nالوصف: ${targetProduct.description}.\n**لطلب المنتج، يرجى التواصل مباشرة عبر:**\n📞 رقم التواصل: **[${STORE_CONTACT_NUMBER}](${WHATSAPP_LINK})**`;
 
-    // 1. بناء رسالة الصورة (Photo Message)
-    const photoMessage = {
+    // 1. رسالة النص العامة (للمحاكي و Messenger)
+    const generalTextMessage = {
+      text: {
+        text: [responseText]
+      }
+    };
+
+    // 2. رسالة الصورة (خاصة بتيليجرام)
+    const telegramPhotoMessage = {
       "platform": "telegram",
       "payload": {
         "telegram": {
@@ -86,8 +112,8 @@ const getPrice = (productName) => {
       }
     };
 
-    // 2. بناء رسالة النص والأزرار (Text Message)
-    const textMessage = {
+    // 3. رسالة النص والأزرار (خاصة بتيليجرام)
+    const telegramTextMessage = {
       "platform": "telegram",
       "payload": {
         "telegram": {
@@ -97,18 +123,25 @@ const getPrice = (productName) => {
       }
     };
 
-    // 3. تجميع الردود وإرسالها
+    // 4. تجميع الردود وإرسالها: النص العام يأتي أولاً كـ Fallback
     return {
-      fulfillmentMessages: [photoMessage, textMessage]
+      fulfillmentText: responseText, // ضروري ليعمل المحاكي
+      fulfillmentMessages: [generalTextMessage, telegramPhotoMessage, telegramTextMessage]
     };
 
   } else {
-    // ... (منطق البحث كاسم فئة ورسائل الخطأ يبقى كما هو) ...
-    // ملاحظة: دالة getCategory تحتاج إلى تعريف أو استيراد إن لم تكن موجودة عالمياً
-    // بما أنك تستخدمها في server.js فهي موجودة، لذلك نترك هذا الجزء كما هو.
-    return `آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`;
+    // 🛑 تم تغيير الرد إلى تنسيق JSON صحيح
+    // نبحث كفئة أولاً
+    const categoryResponse = botLogic.getCategory(productName);
+    if (categoryResponse.fulfillmentText !== `آسف، لا توجد منتجات للفئة "${productName}" حالياً.`) {
+      return categoryResponse;
+    }
+
+    return createDialogflowResponse(`آسف، المنتج أو الفئة باسم "${productName}" غير موجود/ة في قائمة الهدايا لدينا.`);
   }
 };
+// ... يجب إضافة الدالة المساعدة (createDialogflowResponse) في logic.js (يفضل قبل getPrice)
+// تأكد من أن الدالة getCategory معرفة أو مستوردة بشكل صحيح إذا لم تكن عالمية
 
 
 
