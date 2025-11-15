@@ -199,23 +199,31 @@ const getCategory = (categoryName) => {
     // النص العام الذي سيستخدمه Messenger/Emulator
     const GENERAL_RESPONSE_TEXT = `🛒 المنتجات المتاحة في فئة **${categoryName}**. اختر المنتج الذي تريده:`;
 
-    // ⬅️ 1. بناء مصفوفة الأزرار
-    const productButtons = filteredProducts.map(product => {
-      return [{
+    // ⬅️ 1. بناء مصفوفة الأزرار المسطحة الموحدة (للتنسيق بين المنصات)
+    const unifiedProductButtons = filteredProducts.map(product => {
+      return {
         text: product.name,
-        // ملاحظة: نستخدم callback_data، وليس نص عادي.
-        callback_data: `سعر ${product.name}`
-      }];
+        // القيمة التي سترسل إلى Dialogflow (سواء callback_data أو نص Quick Reply)
+        data: `سعر ${product.name}`
+      };
     });
 
-    // ⬅️ 2. بناء الرسالة النصية العامة (لـ Messenger/Emulator)
+
+    // ⬅️ 2. بناء الأزرار لـ Telegram (مصفوفة ثنائية الأبعاد)
+    const telegramKeyboard = unifiedProductButtons.map(btn => [{
+      text: btn.text,
+      callback_data: btn.data
+    }]);
+
+
+    // ⬅️ 3. بناء الرسالة النصية العامة (لـ Emulator)
     const generalTextMessage = {
       text: {
         text: [GENERAL_RESPONSE_TEXT]
       }
     };
 
-    // ⬅️ 3. بناء رسالة Telegram الخاصة
+    // ⬅️ 4. بناء رسالة Telegram الخاصة
     const telegramButtonsMessage = {
       "platform": "telegram",
       "payload": {
@@ -223,16 +231,27 @@ const getCategory = (categoryName) => {
           "text": GENERAL_RESPONSE_TEXT,
           "parse_mode": "Markdown", // إضافة تنسيق Markdown
           "reply_markup": {
-            "inline_keyboard": productButtons
+            "inline_keyboard": telegramKeyboard
           }
         }
       }
     };
 
-    // ⬅️ 4. الإرجاع الموحد (الـ server.js سيقوم بالتصفية)
+    // ⬅️ 5. الرسالة الجديدة لـ Messenger (Facebook)
+    const messengerQuickReplies = {
+      "platform": "facebook",
+      "quickReplies": {
+        "title": GENERAL_RESPONSE_TEXT,
+        // Messenger يستخدم مصفوفة النصوص فقط
+        "quickReplies": unifiedProductButtons.map(btn => btn.text)
+      }
+    };
+
+
+    // ⬅️ 6. الإرجاع الموحد (الـ server.js سيقوم بالتصفية)
     return {
       fulfillmentText: GENERAL_RESPONSE_TEXT, // النص الكامل لـ Messenger/Emulator
-      fulfillmentMessages: [generalTextMessage, telegramButtonsMessage] // الردود المفصلة
+      fulfillmentMessages: [generalTextMessage, messengerQuickReplies, telegramButtonsMessage] // الردود المفصلة
     };
 
   } else {
@@ -315,15 +334,23 @@ const getPriceRange = (min, max, originalQuery) => {
     return createDialogflowResponse(failureText);
   }
 
-  // ⬅️ 1. بناء مصفوفة الأزرار: كل منتج في صف منفصل
-  const productButtons = matchingProducts.map(product => {
-    return [{
-      text: `${product.name} (السعر: ${product.price} جنيه)`,
-      callback_data: `سعر ${product.name}`
-    }];
+  // ⬅️ 1. بناء مصفوفة الأزرار المسطحة الموحدة (للتنسيق بين المنصات)
+  const unifiedProductButtons = matchingProducts.map(product => {
+    const buttonText = `${product.name} (السعر: ${product.price} جنيه)`;
+    return {
+      text: buttonText,
+      // القيمة التي سترسل إلى Dialogflow (سواء callback_data أو نص Quick Reply)
+      data: `سعر ${product.name}`
+    };
   });
 
-  // ⬅️ 2. بناء الـ Custom Payload وإرجاعه
+  // ⬅️ 2. بناء الأزرار لـ Telegram (مصفوفة ثنائية الأبعاد)
+  const telegramKeyboard = unifiedProductButtons.map(btn => [{
+    text: btn.text,
+    callback_data: btn.data
+  }]);
+
+  // ⬅️ 3. بناء الـ Custom Payload وإرجاعه
   const responseText = `لقد وجدت ${matchingProducts.length} منتجات في نطاق الميزانية المطلوبة (${displayMin} - ${displayMax} جنيه). اختر المنتج الذي تريده:`;
 
   // الرسالة النصية العامة (للمحاكي و Messenger)
@@ -339,107 +366,61 @@ const getPriceRange = (min, max, originalQuery) => {
     "payload": {
       "telegram": {
         "text": responseText,
-        "parse_mode": "Markdown", // إضافة تنسيق Markdown
+        "parse_mode": "Markdown",
         "reply_markup": {
-          "inline_keyboard": productButtons
+          "inline_keyboard": telegramKeyboard
         }
       }
     }
   };
 
-  // ⬅️ 3. الإرجاع الموحد
+  // ⬅️ 4. الرسالة الجديدة لـ Messenger (Facebook)
+  const messengerQuickReplies = {
+    "platform": "facebook",
+    "quickReplies": {
+      "title": responseText,
+      // Messenger يستخدم مصفوفة النصوص فقط
+      "quickReplies": unifiedProductButtons.map(btn => btn.text)
+    }
+  };
+
+  // ⬅️ 5. الإرجاع الموحد (بما في ذلك Messenger/Facebook)
   return {
-    fulfillmentText: responseText, // النص الكامل لـ Messenger/Emulator
-    fulfillmentMessages: [generalTextMessage, telegramButtonsMessage] // الردود المفصلة
+    fulfillmentText: responseText,
+    fulfillmentMessages: [generalTextMessage, messengerQuickReplies, telegramButtonsMessage] // الردود المفصلة
   };
 };
-
-
 
 
 /**
  * تجلب جميع أسماء المنتجات المتاحة وتحولها إلى أزرار مضمنة (Inline Buttons).
  * تستخدم للرد على نية 'Catalog.Overview'.
+ * متوافقة مع جميع المنصات (Telegram/Messenger).
  */
 function getAllProductsAsButtons() {
-  // 1. استخلاص جميع أسماء المنتجات مباشرة من مصفوفة 'products'
-  const allProductNames = products.map(product => product.name);
+  // 1. استخلاص جميع أسماء المنتجات الفريدة (أسماء الأزرار)
+  const allProductNames = Array.from(new Set(products.map(product => product.name)));
 
-  // 2. تحويل الأسماء إلى مصفوفة أزرار
-  const productButtons = Array.from(new Set(allProductNames)).map(name => {
-    return [{
+  // 2. بناء مصفوفة الأزرار المسطحة الموحدة (للتنسيق بين المنصات)
+  const unifiedProductButtons = allProductNames.map(name => {
+    return {
       text: name, // اسم المنتج على الزر
-      callback_data: `سعر ${name}` // عند الضغط، يرسل طلب سعر
-    }];
+      // القيمة التي سترسل إلى Dialogflow (سواء callback_data أو نص Quick Reply)
+      data: `سعر ${name}`
+    };
   });
-
-  // 3. بناء الـ Custom Payload وإرجاعه
-  const responseText = `لدينا مجموعة مختارة من الهدايا المميزة. يرجى اختيار المنتج مباشرة من القائمة:`;
-
-  // ⬅️ 1. بناء الرسالة النصية العامة (لـ Messenger/Emulator)
-  const generalTextMessage = {
-    text: {
-      text: [responseText]
-    }
-  };
-
-  // ⬅️ 2. بناء رسالة Telegram الخاصة
-  const telegramButtonsMessage = {
-    "platform": "telegram",
-    "payload": {
-      "telegram": {
-        "text": responseText,
-        "reply_markup": {
-          "inline_keyboard": productButtons // مصفوفة الأزرار التي بنيناها
-        }
-      }
-    }
-  };
-
-  // ⬅️ 3. الإرجاع الموحد
-  return {
-    fulfillmentText: responseText, // النص الكامل لـ Messenger/Emulator
-    fulfillmentMessages: [generalTextMessage, telegramButtonsMessage] // الردود المفصلة
-  };
-}
-
-
-
-
-
-/**
- * تجلب أفضل 3 منتجات بناءً على "recommendation_score" وتحولها إلى أزرار.
- * الأولوية التسويقية هي الأعلى (الرقم الأكبر).
- */
-const getRecommendations = () => {
-  // 1. الفرز: ترتيب المنتجات تنازلياً (الأعلى score أولاً)
-  const sortedProducts = products.slice().sort((a, b) => {
-    // نضمن أن المنتجات التي ليس لها score ستأتي في النهاية
-    const scoreA = a.recommendation_score || 0;
-    const scoreB = b.recommendation_score || 0;
-    return scoreB - scoreA; // الفرز التنازلي (الأكبر أولاً)
-  });
-
-  // 2. اختيار أفضل 3 منتجات فقط (للحفاظ على نظافة الرد)
-  const topThreeRecommendations = sortedProducts.slice(0, 3);
 
   // 3. بناء الرد النهائي
-  const responseText = `✨ إليك أهم 3 توصيات حصرية بناءً على تقييم المبيعات: اختر ما تفضله:`;
+  const responseText = `لدينا مجموعة مختارة من الهدايا المميزة. يرجى اختيار المنتج مباشرة من القائمة:`;
 
-  if (topThreeRecommendations.length === 0) {
-    // 🛑 استخدام الدالة المساعدة للتوحيد في حالة عدم وجود منتجات
-    return createDialogflowResponse(`عفواً، لا توجد توصيات متاحة حالياً.`);
-  }
+  // ⬅️ 1. بناء الأزرار لـ Telegram (مصفوفة ثنائية الأبعاد)
+  const telegramKeyboard = unifiedProductButtons.map(btn => [{
+    text: btn.text,
+    callback_data: btn.data
+  }]);
 
-  // ⬅️ 1. بناء مصفوفة الأزرار
-  const productButtons = topThreeRecommendations.map(product => {
-    return [{
-      text: `${product.name} (الأفضل تقييماً!)`,
-      callback_data: `سعر ${product.name}`
-    }];
-  });
 
-  // ⬅️ 2. بناء الرسالة النصية العامة (لـ Messenger/Emulator)
+  // ⬅️ 2. بناء الرسالة النصية العامة (لـ Emulator)
   const generalTextMessage = {
     text: {
       text: [responseText]
@@ -453,16 +434,106 @@ const getRecommendations = () => {
       "telegram": {
         "text": responseText,
         "reply_markup": {
-          "inline_keyboard": productButtons
+          "inline_keyboard": telegramKeyboard // مصفوفة الأزرار التي بنيناها
         }
       }
     }
   };
 
-  // ⬅️ 4. الإرجاع الموحد
+  // ⬅️ 4. الرسالة الجديدة لـ Messenger (Facebook)
+  const messengerQuickReplies = {
+    "platform": "facebook",
+    "quickReplies": {
+      "title": responseText,
+      // Messenger يستخدم مصفوفة النصوص فقط
+      "quickReplies": unifiedProductButtons.map(btn => btn.text)
+    }
+  };
+
+  // ⬅️ 5. الإرجاع الموحد (بما في ذلك Messenger/Facebook)
   return {
     fulfillmentText: responseText,
-    fulfillmentMessages: [generalTextMessage, telegramButtonsMessage]
+    fulfillmentMessages: [generalTextMessage, messengerQuickReplies, telegramButtonsMessage]
+  };
+}
+
+
+
+
+
+/**
+ * تجلب أفضل 3 منتجات بناءً على "recommendation_score" وتحولها إلى أزرار.
+ * الأولوية التسويقية هي الأعلى (الرقم الأكبر).
+ * متوافقة مع جميع المنصات (Telegram/Messenger).
+ */
+const getRecommendations = () => {
+  // 1. الفرز: ترتيب المنتجات تنازلياً (الأعلى score أولاً)
+  const sortedProducts = products.slice().sort((a, b) => {
+    const scoreA = a.recommendation_score || 0;
+    const scoreB = b.recommendation_score || 0;
+    return scoreB - scoreA; // الفرز التنازلي
+  });
+
+  // 2. اختيار أفضل 3 منتجات فقط
+  const topThreeRecommendations = sortedProducts.slice(0, 3);
+
+  // 3. بناء الرد النهائي
+  const responseText = `✨ إليك أهم 3 توصيات حصرية بناءً على تقييم المبيعات: اختر ما تفضله:`;
+
+  if (topThreeRecommendations.length === 0) {
+    return createDialogflowResponse(`عفواً، لا توجد توصيات متاحة حالياً.`);
+  }
+
+  // ⬅️ 1. بناء مصفوفة الأزرار المسطحة الموحدة (للتنسيق بين المنصات)
+  const unifiedProductButtons = topThreeRecommendations.map(product => {
+    const buttonText = `${product.name} (الأفضل تقييماً!)`;
+    return {
+      text: buttonText,
+      // القيمة التي سترسل إلى Dialogflow (سواء callback_data أو نص Quick Reply)
+      data: `سعر ${product.name}`
+    };
+  });
+
+  // ⬅️ 2. بناء الأزرار لـ Telegram (مصفوفة ثنائية الأبعاد)
+  const telegramKeyboard = unifiedProductButtons.map(btn => [{
+    text: btn.text,
+    callback_data: btn.data
+  }]);
+
+  // ⬅️ 3. بناء الرسالة النصية العامة (لـ Emulator)
+  const generalTextMessage = {
+    text: {
+      text: [responseText]
+    }
+  };
+
+  // ⬅️ 4. بناء رسالة Telegram الخاصة
+  const telegramButtonsMessage = {
+    "platform": "telegram",
+    "payload": {
+      "telegram": {
+        "text": responseText,
+        "reply_markup": {
+          "inline_keyboard": telegramKeyboard
+        }
+      }
+    }
+  };
+
+  // ⬅️ 5. الرسالة الجديدة لـ Messenger (Facebook)
+  const messengerQuickReplies = {
+    "platform": "facebook",
+    "quickReplies": {
+      "title": responseText,
+      // Messenger يستخدم النص كقيمة، لذا نأخذ مصفوفة النصوص فقط
+      "quickReplies": unifiedProductButtons.map(btn => btn.text)
+    }
+  };
+
+  // ⬅️ 6. الإرجاع الموحد (بما في ذلك Messenger/Facebook)
+  return {
+    fulfillmentText: responseText,
+    fulfillmentMessages: [generalTextMessage, messengerQuickReplies, telegramButtonsMessage]
   };
 };
 
@@ -531,42 +602,61 @@ const getHelpPayload = () => {
 const getCategoryButtons = () => {
   const responseText = "مرحباً! أنا بوت متجر الهدايا. كيف يمكنني مساعدتك؟\nيمكنك البحث عن اسم منتج معين، أو اختر فئة من الأقسام التالية:";
 
-  // ⬅️ 1. تعريف مصفوفة الأزرار (تظل كما هي)
-  const categoryKeyboard = [
-    [
-      { "text": "مجوهرات", "callback_data": "وريني كل منتجات مجوهرات" },
-      { "callback_data": "وريني كل منتجات إلكترونيات", "text": "إلكترونيات" }
-    ],
-    [
-      { "text": "هدايا رجالية", "callback_data": "وريني كل منتجات هدايا رجالية" },
-      { "callback_data": "وريني كل منتجات Home Goods", "text": "Home Goods" }
-    ]
+  // ⬅️ 1. بناء مصفوفة الأزرار المسطحة (Category Map)
+  const categoryMap = [
+    { "text": "مجوهرات", "data": "وريني كل منتجات مجوهرات" },
+    { "text": "إلكترونيات", "data": "وريني كل منتجات إلكترونيات" },
+    { "text": "هدايا رجالية", "data": "وريني كل منتجات هدايا رجالية" },
+    { "text": "Home Goods", "data": "وريني كل منتجات Home Goods" }
   ];
 
-  // ⬅️ 2. بناء الرسالة النصية العامة (لـ Messenger/Emulator)
+  // ⬅️ 2. بناء الأزرار لـ Telegram (مصفوفة ثنائية الأبعاد)
+  // يتم تقسيمها إلى صفوف (صفين في كل صف)
+  const telegramKeyboard = [];
+  for (let i = 0; i < categoryMap.length; i += 2) {
+    const row = [];
+    row.push({ "text": categoryMap[i].text, "callback_data": categoryMap[i].data });
+    if (categoryMap[i + 1]) {
+      row.push({ "text": categoryMap[i + 1].text, "callback_data": categoryMap[i + 1].data });
+    }
+    telegramKeyboard.push(row);
+  }
+
+
+  // ⬅️ 3. بناء الرسالة النصية العامة (لـ Messenger/Emulator)
   const generalTextMessage = {
     text: {
       text: [responseText]
     }
   };
 
-  // ⬅️ 3. بناء رسالة Telegram الخاصة
+  // ⬅️ 4. بناء رسالة Telegram الخاصة (باستخدام المصفوفة الثنائية)
   const telegramButtonsMessage = {
     "platform": "telegram",
     "payload": {
       "telegram": {
         "text": responseText,
         "reply_markup": {
-          "inline_keyboard": categoryKeyboard
+          "inline_keyboard": telegramKeyboard
         }
       }
     }
   };
 
-  // ⬅️ 4. الإرجاع الموحد
+  // ⬅️ 5. الرسالة الجديدة لـ Messenger (Facebook)
+  const messengerQuickReplies = {
+    "platform": "facebook",
+    "quickReplies": {
+      "title": "اختر فئة الهدايا:",
+      // Messenger يستخدم مصفوفة بسيطة من النصوص
+      "quickReplies": categoryMap.map(btn => btn.text)
+    }
+  };
+
+  // ⬅️ 6. الإرجاع الموحد (بما في ذلك Messenger/Facebook)
   return {
-    fulfillmentText: responseText, // النص الكامل لـ Messenger/Emulator
-    fulfillmentMessages: [generalTextMessage, telegramButtonsMessage] // الردود المفصلة
+    fulfillmentText: responseText,
+    fulfillmentMessages: [generalTextMessage, messengerQuickReplies, telegramButtonsMessage] // الآن تشمل Facebook
   };
 };
 
