@@ -1,9 +1,11 @@
 {
-  "functions": {
-    "server.js": {
-      "includeFiles": "data.json"
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/server.js"
     }
-  },
+  ],
   "build": {
     "env": {
       "NODE_ENV": "production"
